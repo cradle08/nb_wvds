@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<workspace>
+  <project>
+    <path>$WS_DIR$\activator\EW430\activator.ewp</path>
+  </project>
+  <project>
+    <path>$WS_DIR$\boot\EW430\boot.ewp</path>
+  </project>
+  <project>
+    <path>$WS_DIR$\device\EW430\device.ewp</path>
+  </project>
+  <project>
+    <path>$WS_DIR$\parking\EW430\parking.ewp</path>
+  </project>
+  <project>
+    <path>$WS_DIR$\..\sniffer\EW430\sniffer.ewp</path>
+  </project>
+  <project>
+    <path>$WS_DIR$\updater\EW430\updater.ewp</path>
+  </project>
+  <batchBuild/>
+</workspace>
+
+

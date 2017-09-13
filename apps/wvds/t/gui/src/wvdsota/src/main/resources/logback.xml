@@ -1,0 +1,23 @@
+<configuration>
+    <timestamp key="byDay" datePattern="yyyyMMdd"/>
+    <timestamp key="bySec" datePattern="yyyyMMdd_HHmmss"/>
+
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d{HH:mm:ss.SSS} %-10thread %-5level %logger{40} - %msg%n</pattern>
+        </layout>
+    </appender>
+
+    <appender name="Logfile" class="ch.qos.logback.core.FileAppender">
+        <file>log/${bySec}.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%date %-10thread %-5level %logger{40} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="Console" />
+        <appender-ref ref="Logfile" />
+    </root>
+</configuration>

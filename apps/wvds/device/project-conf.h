@@ -1,0 +1,52 @@
+#ifndef _PROJECT_CONF_H
+#define _PROJECT_CONF_H
+
+#define DEBUG_VD 1
+#define DEBUG_RADIO 1
+
+#define BOARD_CADRE1120_VD 1
+#define DEVICE 1
+#define NODEID 3
+
+#define WITH_OTA 1
+#define WITH_LPM 1
+#define WITH_DYNAMIC_TIMEBASE 1
+#define WITH_TASKMON 1
+
+#define RFCHAN_MIN 1
+#define RFCHAN_MAX 10
+#define RFPOWER_MIN 17
+#define RFPOWER_MAX 28
+#ifndef RF_CHANNEL
+#define RF_CHANNEL 6
+#endif
+
+#undef RADIO_TX_DELAY
+#define RADIO_TX_DELAY 100
+#undef RADIO_ACK_DELAY
+#define RADIO_ACK_DELAY 100
+
+#define M25PE 20
+#define M25PE_LPM 1
+
+#undef LED_RADIO
+#define LED_RADIO 1
+
+#define MESH_PKT_TIMEOUT (CLOCK_SECOND * 8)
+#define MESH_BROADCAST 1
+#define MESH_INTERCEPT 1
+#define MESH_SENT_AFTER 1
+#define MESH_MAX_REXMIT 4
+
+#define MULTIHOP_FORWARD 0
+#define MULTIHOP_SENT_AFTER 1
+
+#define ROUTE_NV 1
+#define ROUTE_FAIL 1
+
+#define TRICKLE_PERIODIC 1
+#define TRICKLE_FORWARD 0
+
+#define NETSTACK_CONF_MAC_SEQNO_HISTORY 2
+
+#endif /* _PROJECT_CONF_H */

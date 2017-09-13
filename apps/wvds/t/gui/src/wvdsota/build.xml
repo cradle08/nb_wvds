@@ -1,0 +1,97 @@
+<?xml version="1.0" ?>
+<project name="WVDSOTA" default="dist">
+
+    <property name="main-class" value="com.cadre.wvds.wvdsota.Main"/>
+    <property name="app.jar" value="wvdsota.jar"/>
+    <property name="dist.jar" value="wvdsota.jar"/>
+
+    <property name="src.dir" value="src"/>
+    <property name="bin.dir" value="bin"/>
+    <property name="res.dir" value="src/main/resources"/>
+    <property name="dist.dir" value="../../dist/wvdsota/lib"/>
+    <property name="proguard.dir" value="C:/cygwin/opt/proguard"/>
+
+    <target name="dist" depends="clean, class, run_jar">
+        <echo message="Distributing wvdsota into ${dist.dir}..."/>
+        <copy file="${app.jar}" tofile="${dist.dir}/${app.jar}"/>
+        <!--<copy file="${dist.jar}" tofile="${dist.dir}/${app.jar}"/>-->
+        <!--<copy file="wvdsota.ini" todir="${dist.dir}"/>-->
+    </target>
+
+    <target name="jar" depends="class">
+        <echo message="Building ${app.jar}..."/>
+        <jar jarfile="${app.jar}">
+            <fileset dir="${bin.dir}" includes="**/*.class"/>
+            <fileset dir="${res.dir}" includes="demo*.properties"/>
+            <fileset dir="${res.dir}" includes="logback.xml"/>
+            <manifest>
+                <attribute name="Main-Class" value="${main-class}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="class" description="Compile target">
+        <mkdir dir="${bin.dir}"/>
+        <javac srcdir="${src.dir}" destdir="${bin.dir}" includeantruntime="on">
+            <classpath>
+                <pathelement path="${classpath}"/>
+                <fileset dir="lib">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
+        </javac>
+        <copy todir="${bin.dir}">
+            <fileset dir="${res.dir}" includes="*.properties"/>
+            <fileset dir="${res.dir}" includes="logback.xml"/>
+        </copy>
+    </target>
+
+    <target name="lang" description="Translate language file">
+        <exec executable="native2ascii" failonerror="true">
+            <arg line="${res.dir}/demo_zh_CN.in ${res.dir}/demo_zh_CN.properties" />
+        </exec>
+    </target>
+
+    <target name="clean">
+        <echo message="cleaning build directory..."/>
+        <delete failonerror="false">
+            <fileset dir="${bin.dir}" includes="**/*.class"/>
+        </delete>
+    </target>
+
+    <target name="javadoc" >
+        <echo message = "Building javadoc" />
+        <exec executable="make" failonerror="true">
+            <arg line="javadoc" />
+        </exec>
+    </target>
+
+    <target name="proguard" description="Obfuscate compiled classes">
+        <taskdef resource="proguard/ant/task.properties"
+            classpath="${proguard.dir}/lib/proguard.jar" />
+        <proguard configuration="${src.dir}/proguard.conf"/>
+    </target>
+
+    <property name="dir.buildfile" value="."/>
+    <property name="dir.workspace" value="Y:/Documents/Home/tool/Eclipse/workspace"/>
+    <property name="dir.jarfile" value="${dir.buildfile}"/>
+    <target name="run_jar">
+        <jar destfile="${dir.jarfile}/${app.jar}">
+            <manifest>
+                <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
+                <attribute name="Rsrc-Main-Class" value="com.cadre.wvds.wvdsota.Main"/>
+                <attribute name="Class-Path" value="."/>
+                <attribute name="Rsrc-Class-Path" value="./ commons-io-2.4.jar logback-core-1.0.7.jar logback-classic-1.0.7.jar slf4j-api-1.7.2.jar sqlite-jdbc-3.7.2.jar JTattoo-1.6.11.jar"/>
+            </manifest>
+            <zipfileset src="jar-in-jar-loader.zip"/>
+            <fileset dir="${dir.jarfile}/bin"/>
+            <zipfileset dir="${dir.jarfile}/lib" includes="commons-io-2.4.jar"/>
+            <zipfileset dir="${dir.jarfile}/lib" includes="logback-core-1.0.7.jar"/>
+            <zipfileset dir="${dir.jarfile}/lib" includes="logback-classic-1.0.7.jar"/>
+            <zipfileset dir="${dir.jarfile}/lib" includes="slf4j-api-1.7.2.jar"/>
+            <zipfileset dir="${dir.jarfile}/lib" includes="sqlite-jdbc-3.7.2.jar"/>
+            <zipfileset dir="${dir.jarfile}/lib" includes="JTattoo-1.6.11.jar"/>
+        </jar>
+    </target>
+
+</project>

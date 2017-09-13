@@ -1,0 +1,79 @@
+title.app = Sniffer网络分析器
+
+menu.File = 文件
+menu.Save = 保存
+menu.Exit = 退出
+menu.Edit = 编辑
+menu.Clear = 清除
+menu.Reload = 重载
+menu.Help = 帮助
+menu.About = 关于
+
+toolbar.start = 开始
+toolbar.stop = 停止
+toolbar.edit = 编辑
+toolbar.reload = 重载
+toolbar.save = 保存
+toolbar.clear = 清除
+toolbar.replay = 回放
+toolbar.manager = 管理
+toolbar.control = 控制
+toolbar.params = 参数
+toolbar.exit = 退出
+
+status.rcvd = 接收
+status.uptime = 已运行
+
+tab.Packet = 网络数据
+col.Line = 序号
+col.Time = 时间
+col.RSSI = RSSI
+col.PAN = PAN
+col.Chan = 信道
+col.Name = 节点名
+col.ID = 节点号
+col.Type = 消息名
+col.Description = 消息描述
+col.Length = 长度
+col.Packet = 数据包
+col.Logging = 日志
+table.Description = 消息解析
+table.Message = 数据包
+table.Logging = 日志
+combo.Channel = 信道
+combo.TXPower = 发送功率
+textf.Mote = 节点
+textf.Filter = 过滤
+textf.Packet = 数据包
+
+tab.Magnetic = 磁场曲线
+label.Node = 节点
+label.Status = 状态
+label.Series = 数据系列
+cbox.Marker = 标识
+cbox.Fill = 实心
+cbox.XScroll = X滚动
+label.MinX = X下限
+label.MaxX = X上限
+label.MinY = Y下限
+label.MaxY = Y上限
+
+tab.ParkEvent = 车位事件
+
+tab.Analyse = 网络分析
+
+button.ok = 确定
+button.quit = 退出
+button.Send = 发送
+button.reset = 重置
+
+com.title = 串口选择
+com.name = 串口号
+com.baud = 波特率
+com.hint = 请选择设备连接的串口:
+
+title.about = 关于
+text.about = Sniffer网络分析器\n\n版本号: <version>\n版本日期: <build>\nGit版本号: <commit>\n\n固件版本: <fwver>\n固件日期: <fwbuild>\nGit版本号: <fwcommit>
+
+msg.reloadok = packet.xml重新加载成功
+

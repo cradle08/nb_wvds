@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+    <timestamp key="byDay" datePattern="yyyyMMdd" />
+    <timestamp key="bySec" datePattern="yyyyMMdd_HHmmss" />
+
+    <!--  Output to Console -->
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%date %thread %5level %file:%line - %msg%n</pattern>
+        </layout>
+    </appender>
+
+    <!--  Output to File -->
+    <appender name="FileTxt" class="ch.qos.logback.core.FileAppender">
+        <file>log/${bySec}.log</file>
+        <encoder>
+            <pattern>%date %thread %5level %30logger - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+	<logger name="cn.ac.siat.ietcwsn.sniffer.ComReader">
+        <level value="INFO" />
+    </logger>
+    <logger name="cn.ac.siat.ietcwsn.common.serial.RingByteBuffer">
+        <level value="WARN" />
+    </logger>
+    <root level="INFO">
+        <appender-ref ref="Console" />
+        <appender-ref ref="FileTxt" />
+    </root>
+</configuration>
