@@ -1,0 +1,863 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- =================================================================== -->
+<!--                WVDS系统现场无线网络的消息定义                       -->
+<!-- =================================================================== -->
+<!--  1. packet的comment属性包含了对该消息的简要说明，起始如果包括0x??   -->
+<!--     则表示该消息的应用层数据对应《WVDS通讯协议》文档中的相应消息。  -->
+<!--  2. 在comment属性中以下简写分别对应设备：                           -->
+<!--       VD: 车位检测节点                                              -->
+<!--       RP: 中继节点                                                  -->
+<!--       AP: 网关节点                                                  -->
+<!--       FAE: 激活/维护节点                                            -->
+<!--       OTA: 升级/更新节点                                            -->
+<!--       FES: 后台服务器                                               -->
+<!-- =================================================================== -->
+<!--  新增消息定义的方法：                                               -->
+<!--  1. 增加一个<packet>元素，在name属性中指定消息名称，comment属性中   -->
+<!--     添加对该消息的简要说明；                                        -->
+<!--  2. 在<packet>元素中为消息的每一个关心的域增加一个对应的<field>元   -->
+<!--     素。不需要为消息的所有域都增加对应<field>；                     -->
+<!--  3. <field>元素中指定以下属性来描述该域以便解析：                   -->
+<!--     1) offset属性，该域在整个数据包中以字节数计的偏移，首字节为0；  -->
+<!--     2) name属性，该域的名称，便于用户理解该域的数据含义；           -->
+<!--     3) type属性，该域的数据类型，用于解析出该域的易读形式。支持的   -->
+<!--        类型有：int8,int16,int32,uint8,uint16,uint32,byte[],char[],  -->
+<!--        bits[:]，其中byte[]和char[]应在中括号内指定长度，bits[]中应  -->
+<!--        指定所占用位的范围。[u]int?类型将解析为对应数值，byte[]类型  -->
+<!--        为字节串，char[]类型为ASCII字符串；                          -->
+<!--     4) value属性，该域的取值，用于将数据包匹配到对应的消息定义。数  -->
+<!--        据包对应偏移处与指定的value字节串相同时视为匹配，多个field   -->
+<!--        都匹配则视为匹配当前packet定义。value指定时以十六进制形式。  -->
+<!--     5) endian属性，该域的大小端，用于指定多字节域的解析顺序。以16   -->
+<!--        位数为例，假设数据包中0x12 0x34两个字节为uint16值，按小端    -->
+<!--        little解析时值为0x3412，大端big解析时值为0x1234；            -->
+<!--     6) format属性，该域的显示形式，按C语言printf格式指定。对byte[]  -->
+<!--        类型，该格式分别用于每个字节，其默认格式相当于"%02X "，相邻  -->
+<!--        字节间有空格;                                                -->
+<!--     7) hide属性，用于隐藏该域的显示。如果某个域不需要解析，可以直   -->
+<!--        将该<field>行注释掉；如果需要解析但不需要显示，比如有value   -->
+<!--        属性的域，则指定hide属性为true即可。                         -->
+<!--                                                                     -->
+<!--  新增消息定义的注意事项：                                           -->
+<!--  1. 如果已有相似的消息定义，可以把该<packet>复制为新的消息，然后修  -->
+<!--     改新的名称和新增或修改带value的field；                          -->
+<!--  2. Sniffer程序按本文档中<packet>的顺序对数据包进行匹配，如果按照排 -->
+<!--     在前面的消息定义已判定，则会结束匹配。因此，如果消息定义PB是PA  -->
+<!--     的子类型，即PB比PA多一个判定条件，其他相同，则应把PB放在PA前面，-->
+<!--     否则将判定为消息PA而不是更准确的消息PB。                        -->
+<!--  3. <packet>内的<field>可以不按照offset的顺序排列，经常查看的域即使 -->
+<!--     offset较大也可以放在前面。                                      -->
+<!-- =================================================================== -->
+<packets>
+    <packet name="park test" comment="算法测试消息">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x81 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="id" type="uint8" endian="little"/>
+        <field offset="14" name="state" type="uint8" endian="little"/>
+        <field offset="15" name="seq" type="uint16" endian="little"/>
+        <field offset="17" name="x2" type="int16" endian="little"/>
+        <field offset="19" name="y2" type="int16" endian="little"/>
+        <field offset="21" name="z2" type="int16" endian="little"/>
+    </packet>
+    <packet name="rime test" comment="Rime栈测试消息">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x80 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="seqno" type="uint8" endian="big"/>
+        <field offset="14" name="data1" value="0x01" type="uint8" endian="big" hide="true"/>
+        <field offset="15" name="data2" value="0x02" type="uint8" endian="big" hide="true"/>
+        <!--<field offset="13" name="seqno" type="uint16" endian="big"/>-->
+        <!--<field offset="15" name="rcvd" type="uint16" endian="big"/>-->
+        <!--<field offset="17" name="rssi" type="int8" endian="big"/>-->
+    </packet>
+    <packet name="test data" comment="射频距离测试数据消息">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x80 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="type" value="0x01" type="uint8" endian="big" hide="true"/>
+        <field offset="14" name="seqno" type="uint16" endian="big"/>
+        <field offset="16" name="acked" type="uint16" endian="big"/>
+        <field offset="18" name="noack" type="uint16" endian="big"/>
+        <field offset="20" name="error" type="uint16" endian="big"/>
+        <field offset="22" name="rxrssi" type="int8" endian="big"/>
+        <field offset="23" name="txrssi" type="int8" endian="big"/>
+        <field offset="24" name="chan" type="uint8" endian="big"/>
+        <field offset="25" name="power" type="int8" endian="big"/>
+        <field offset="26" name="len" type="uint8" endian="big"/>
+        <field offset="27" name="data" type="byte[4]" endian="big"/>
+    </packet>
+    <packet name="test cmd" comment="射频距离测试命令消息">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x80 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="type" value="0x02" type="uint8" endian="big" hide="true"/>
+        <field offset="14" name="seqno" type="uint16" endian="big"/>
+        <field offset="16" name="chan" type="uint8" endian="big"/>
+        <field offset="17" name="power" type="int8" endian="big"/>
+        <field offset="18" name="len" type="uint8" endian="big"/>
+    </packet>
+    <packet name="test ack" comment="射频距离测试确认消息">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x80 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="type" value="0x03" type="uint8" endian="big" hide="true"/>
+        <field offset="14" name="seqno" type="uint16" endian="big"/>
+        <!--<field offset="16" name="ackto" type="int8" endian="big" hide="true"/>-->
+        <!--<field offset="17" name="reserv" type="byte[6]" endian="big"/>-->
+        <!--<field offset="23" name="rxrssi" type="int8" endian="big"/>-->
+        <field offset="24" name="chan" type="uint8" endian="big"/>
+        <field offset="25" name="power" type="int8" endian="big"/>
+        <field offset="26" name="len" type="uint8" endian="big"/>
+        <field offset="27" name="data" type="byte[4]" endian="big"/>
+    </packet>
+    <packet name="connect" comment="0x21入网消息请求，VD/RP向AP发送以请求加入该子网">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="28" name="op" value="0x61" type="uint8" endian="little" hide="true"/>
+        <field offset="35" name="HwVer" type="uint8" endian="little" format="%02X"/>
+        <field offset="36" name="FwVer" type="uint8" endian="little" format="%02X"/>
+        <!--<field offset="37" name="rpMAC" type="byte[8]" endian="big"/>-->
+        <!--<field offset="45" name="apMAC" type="byte[8]" endian="big"/>-->
+    </packet>
+    <packet name="accept" comment="0x21入网消息应答，AP接收到入网请求时向VD/RP发送，同意该节点加入网络">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0xA1" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="res" value="0x01" type="uint8" endian="little" hide="true"/>
+        <field offset="36" name="mac" type="byte[8]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="reject" comment="0x21入网消息应答，AP接收到入网请求时向VD/RP发送，拒绝该节点加入网络">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0xA1" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="res" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="36" name="mac" type="byte[8]" endian="big" format="%02X"/>
+        <field offset="44" name="reason" type="uint8" endian="little"/>
+    </packet>
+    <packet name="assign" comment="0x21入网消息应答，AP接收到入网请求时向VD/RP发送，向该节点分配新的网络短地址">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0xA1" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="res" value="0x03" type="uint8" endian="little" hide="true"/>
+        <field offset="36" name="mac" type="byte[8]" endian="big" format="%02X"/>
+        <field offset="44" name="addr" type="uint16" endian="little"/>
+    </packet>
+    <packet name="reconn" comment="0x21入网消息应答，AP接收到非入网请求且该节点身份未知时向VD/RP发送，要求该节点再发送入网请求消息重新加入网络">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0xA1" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="res" value="0x04" type="uint8" endian="little" hide="true"/>
+    </packet>
+    <packet name="vd hbeat" comment="0x02VD心跳消息请求，VD周期性向AP发送，上报自身泊位状态、磁场强度、电池状态等信息">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="esender" type="uint16" endian="little"/>
+        <field offset="13" name="erecver" type="uint16" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="37" name="seqno" type="uint8" endian="big"/>
+        <field offset="35" name="status" type="uint8" endian="big"/>
+        <field offset="36" name="temp" type="int8" endian="big"/>
+        <field offset="38" name="magX" type="int16" endian="big"/>
+        <field offset="40" name="magY" type="int16" endian="big"/>
+        <field offset="42" name="magZ" type="int16" endian="big"/>
+        <field offset="44" name="batV" type="uint8" endian="big"/>
+        <field offset="45" name="batQ" type="uint8" endian="big"/>
+        <field offset="46" name="parent" type="byte[8]" endian="big" format="%02X"/>
+        <field offset="54" name="recvRssi" type="int8" endian="big"/>
+        <field offset="56" name="sendRssi" type="int8" endian="big"/>
+    </packet>
+    <packet name="vd hback" comment="0x02VD心跳消息应答，AP接收到请求时向该VD发送，供VD确认心跳消息已被正常接收">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <!--<field offset="11" name="esender" type="uint16" endian="little"/>-->
+        <field offset="13" name="erecver" type="uint16" endian="little"/>
+        <field offset="28" name="op" value="0x82" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="seqno" type="uint8" endian="big"/>
+    </packet>
+    <packet name="rp hbeat" comment="0x03RP心跳消息请求，RP向AP发送，作为心跳消息周期性上报自身状态信息">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="esender" type="uint16" endian="little"/>
+        <field offset="13" name="erecver" type="uint16" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0x43" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="temp" type="int8" endian="big"/>
+        <field offset="36" name="solar" type="uint8" endian="big"/>
+        <field offset="37" name="batV" type="uint8" endian="big"/>
+        <field offset="38" name="batQ" type="uint8" endian="big"/>
+        <field offset="39" name="parent" type="byte[8]" endian="big" format="%02X"/>
+        <field offset="47" name="recvRssi" type="int8" endian="big"/>
+        <field offset="49" name="sendRssi" type="int8" endian="big"/>
+    </packet>
+    <packet name="rp hback" comment="0x03RP心跳消息应答，AP接收到请求时向该RP发送，供RP确认心跳消息已被正常接收">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <!--<field offset="11" name="esender" type="uint16" endian="little"/>-->
+        <field offset="13" name="erecver" type="uint16" endian="little"/>
+        <field offset="28" name="op" value="0x83" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="park evt" comment="0x01事件消息请求，VD在检测到泊位状态发生变化时向AP发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="esender" type="uint16" endian="little"/>
+        <field offset="13" name="erecver" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0x41" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="status" type="uint8" endian="little"/>
+        <field offset="36" name="temp" type="int8" endian="little"/>
+        <field offset="37" name="seqno" type="uint8" endian="little"/>
+        <field offset="38" name="magX" type="int16" endian="big"/>
+        <field offset="40" name="magY" type="int16" endian="big"/>
+        <field offset="42" name="magZ" type="int16" endian="big"/>
+        <field offset="44" name="batV" type="uint8" endian="little"/>
+        <field offset="45" name="batQ" type="uint8" endian="little"/>
+    </packet>
+    <packet name="park ack" comment="0x01事件消息应答，AP接收到请求时向该VD发送，供VD确认事件消息已被正常接收">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" hide="true"/>
+        <field offset="28" name="op" value="0x81" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="mag data" comment="0x24磁场波动消息请求，VD检测到磁场波动时合并多个极值点数据向AP发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="esender" type="uint16" endian="little"/>
+        <field offset="13" name="erecver" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0x64" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="seqno" type="uint8" endian="little"/>
+        <field offset="36" name="magXYZ" type="byte[60]" endian="big" hide="true"/>
+        <field offset="109" name="status" type="uint8" endian="big"/>
+        <field offset="108" name="judge" type="uint8" endian="big"/>
+        <field offset="96" name="baseX" type="int16" endian="big"/>
+        <field offset="98" name="baseY" type="int16" endian="big"/>
+        <field offset="100" name="baseZ" type="int16" endian="big"/>
+        <field offset="102" name="smoothX" type="int16" endian="big"/>
+        <field offset="104" name="smoothY" type="int16" endian="big"/>
+        <field offset="106" name="smoothZ" type="int16" endian="big"/>
+    </packet>
+    <packet name="mag ack" comment="0x24磁场波动消息应答，AP接收到请求时向该VD发送，供VD确认磁场波动消息已被正常接收">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" hide="true"/>
+        <field offset="28" name="op" value="0xA4" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="alarm" comment="0x22报警消息请求，VD/RP周期性检查自身状态发现硬件模块故障时向AP发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0x62" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="radio" type="uint8" endian="little" hide="true"/>
+        <field offset="36" name="sensor" type="uint8" endian="little"/>
+        <field offset="37" name="sensor2" type="uint8" endian="little" hide="true"/>
+        <field offset="38" name="flash1" type="uint8" endian="little" hide="true"/>
+        <field offset="39" name="flash2" type="uint8" endian="little" hide="true"/>
+        <field offset="40" name="rtc" type="uint8" endian="little" hide="true"/>
+        <field offset="41" name="battery" type="uint8" endian="little"/>
+        <field offset="42" name="solarbat" type="uint8" endian="little"/>
+    </packet>
+    <packet name="alarm ack" comment="0x22报警消息应答，AP接收到请求时向该VD/RP发送，供源节点确认请求已被正常接收">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" hide="true"/>
+        <field offset="28" name="op" value="0xA2" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="algo get" comment="0x26检测参数查询应答，VD接收到对检测参数的查询请求发送，接收者可能是FAE或AP">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0x26" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="subop" value="0x01" type="uint8" endian="big" hide="true"/>
+        <field offset="36" name="res" type="uint8" endian="big"/>
+        <field offset="37" name="normalT" type="uint16" endian="big"/>
+        <field offset="39" name="flunctT" type="uint16" endian="big"/>
+        <field offset="41" name="bigThr" type="uint8" endian="big"/>
+        <field offset="42" name="midThr" type="uint8" endian="big"/>
+        <field offset="43" name="litThr" type="uint8" endian="big"/>
+        <field offset="44" name="unThr" type="uint8" endian="big"/>
+        <field offset="45" name="baseX" type="int16" endian="big"/>
+        <field offset="47" name="baseY" type="int16" endian="big"/>
+        <field offset="49" name="baseZ" type="int16" endian="big"/>
+        <field offset="51" name="gain" type="uint8" endian="big"/>
+    </packet>
+    <packet name="algo set" comment="0x26检测参数配置应答，VD接收到对检测参数的配置在执行后发送，接收者可能是FAE或AP">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="28" name="op" value="0x26" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="subop" value="0x02" type="uint8" endian="big" hide="true"/>
+        <field offset="36" name="res" type="uint8" endian="big"/>
+    </packet>
+    <packet name="algo ack" comment="0x26检测参数应答的确认，AP接收到应答时向该VD发送，供源节点确认应答已被正常接收">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="22" name="dev" type="byte[6]" endian="big" hide="true"/>-->
+        <field offset="28" name="op" value="0xA6" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="reinit resp" comment="0x36重新标定消息的应答，VD接收到重新标定请求并执行后向AP发送，包含标定结果">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="22" name="dev" type="byte[6]" endian="big" hide="true"/>-->
+        <field offset="28" name="op" value="0x36" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="35" name="res" type="uint8" endian="little"/>
+        <field offset="36" name="normalT" type="uint16" endian="big"/>
+        <field offset="38" name="flunctT" type="uint16" endian="big"/>
+        <field offset="40" name="bigThr" type="uint8" endian="little"/>
+        <field offset="41" name="midThr" type="uint8" endian="little"/>
+        <field offset="42" name="litThr" type="uint8" endian="little"/>
+        <field offset="43" name="unThr" type="uint8" endian="little"/>
+        <field offset="44" name="baseX" type="int16" endian="big"/>
+        <field offset="46" name="baseY" type="int16" endian="big"/>
+        <field offset="48" name="baseZ" type="int16" endian="big"/>
+        <field offset="50" name="gain" type="uint8" endian="little"/>
+    </packet>
+    <packet name="reinit ack" comment="0x36重新标定应答的确认，AP接收到应答时向该VD发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="22" name="dev" type="byte[6]" endian="big" hide="true"/>-->
+        <field offset="28" name="op" value="0xB6" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="reset ack" comment="0x31重启消息应答，VD/RP接收到重启请求后向AP发送，之后节点重启">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="22" name="dev" type="byte[6]" endian="big" hide="true"/>-->
+        <field offset="28" name="op" value="0x31" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="freset ack" comment="0x32恢复出厂消息应答，VD/RP接收到恢复出厂请求并执行后向AP发送，之后节点重启">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="22" name="dev" type="byte[6]" endian="big" hide="true"/>-->
+        <field offset="28" name="op" value="0x32" type="uint8" endian="little" hide="true"/>
+        <field offset="29" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="basic param" comment="0x25基本参数消息，VD/RP/AP不定时发送，应用层数据只包含WVDS帧有效载荷部分">
+        <!--<field offset="5"  name="to" type="uint16" endian="big"/>-->
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x88 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="seqno" type="uint8" endian="little"/>
+        <field offset="31" name="rfChan" type="uint8" endian="little"/>
+        <field offset="32" name="rfPower" type="int8" endian="little"/>
+        <field offset="16" name="apHbeatT" type="uint16" endian="little"/>
+        <field offset="18" name="rpHbeatT" type="uint16" endian="little"/>
+        <field offset="20" name="vdHbeatT" type="uint16" endian="little"/>
+        <field offset="22" name="healthT" type="uint16" endian="little"/>
+        <field offset="24" name="commandT" type="uint16" endian="little"/>
+        <field offset="26" name="paramT" type="uint16" endian="little"/>
+        <field offset="28" name="batVThr" type="uint8" endian="little"/>
+        <field offset="29" name="batQThr" type="uint8" endian="little"/>
+        <field offset="30" name="solarVThr" type="uint8" endian="little"/>
+    </packet>
+    <packet name="vd act req" comment="0x33VD激活请求，VD在未激活状态被强磁激活后周期性发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="recver" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="sender" type="uint16" endian="little" hide="true"/>
+        <field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="23" name="op" value="0x73" type="uint8" endian="little" hide="true"/>
+        <field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="vd act ack" comment="0x33VD激活应答，FAE接收到请求时向该VD发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="16" name="more" type="bits[7:7]" endian="little"/>-->
+        <!--<field offset="19" name="dest" type="uint16" endian="little"/>-->
+        <!--<field offset="21" name="id" type="uint8" endian="little"/>-->
+        <!--<field offset="22" name="len" type="uint8" endian="little"/>-->
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xB3" type="uint8" endian="little" format="0x%02X" hide="true"/>
+        <field offset="32" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+    </packet>
+    <packet name="fae conn ack" comment="0x34VD连接应答，FAE接收到已激活VD再被强磁激活后发送的请求时向该VD发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="16" name="more" type="bits[7:7]" endian="little"/>-->
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <!--<field offset="19" name="dest" type="uint16" endian="little"/>-->
+        <!--<field offset="21" name="id" type="uint8" endian="little"/>-->
+        <!--<field offset="22" name="len" type="uint8" endian="little"/>-->
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xB4" type="uint8" endian="little" format="0x%02X" hide="true"/>
+        <field offset="32" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="fae disconn" comment="0x35VD断连请求，FAE结束对VD访问后向VD发送以断开连接">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="16" name="more" type="bits[7:7]" endian="little"/>
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <!--<field offset="19" name="dest" type="uint16" endian="little"/>-->
+        <!--<field offset="21" name="id" type="uint8" endian="little"/>-->
+        <!--<field offset="22" name="len" type="uint8" endian="little"/>-->
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xF5" type="uint8" endian="little" hide="true"/>
+        <field offset="32" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="38" name="subop" value="0x01" type="uint8" endian="little" hide="true"/>
+        <field offset="39" name="chan" type="uint8" endian="little"/>
+    </packet>
+    <packet name="fae disconn ack" comment="0x35VD断连应答，VD接收到FAE的断开连接请求后向FAE发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="recver" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="sender" type="uint16" endian="little" hide="true"/>
+        <field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="23" name="op" value="0x35" type="uint8" endian="little" hide="true"/>
+        <field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="30" name="res" value="0x00" type="uint8" endian="little" hide="true"/>
+    </packet>
+    <packet name="fae disconn req" comment="0x35VD断连请求，VD在FAE未断开连接且超时无命令时主动向FAE发送通知要断开连接">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="recver" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="sender" type="uint16" endian="little" hide="true"/>
+        <field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="23" name="op" value="0x35" type="uint8" endian="little" hide="true"/>
+        <field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="30" name="res" value="0x01" type="uint8" endian="little" hide="true"/>
+    </packet>
+    <packet name="fae disconn reqack" comment="0x35VD断连应答，FAE接收到VD因超时主动发送的断开连接请求向该VD发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="16" name="more" type="bits[7:7]" endian="little"/>-->
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <!--<field offset="19" name="dest" type="uint16" endian="little"/>-->
+        <!--<field offset="21" name="id" type="uint8" endian="little"/>-->
+        <!--<field offset="22" name="len" type="uint8" endian="little"/>-->
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xF5" type="uint8" endian="little" format="0x%02X" hide="true"/>
+        <field offset="32" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="38" name="subop" value="0x02" type="uint8" endian="little" hide="true"/>
+    </packet>
+    <packet name="fae algo get" comment="0x26检测参数查询请求，FAE在App操作时向某VD发送以查询其检测参数">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="16" name="more" type="bits[7:7]" endian="little"/>
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xE6" type="uint8" endian="little" hide="true"/>
+        <field offset="32" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="38" name="subop" value="0x01" type="uint8" endian="little" hide="true"/>
+    </packet>
+    <packet name="fae algo set" comment="0x26检测参数配置请求，FAE在App操作时向某VD发送以配置其检测参数">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="16" name="more" type="bits[7:7]" endian="little"/>
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xE6" type="uint8" endian="little" hide="true"/>
+        <field offset="32" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="38" name="subop" value="0x02" type="uint8" endian="little" hide="true"/>
+    </packet>
+    <packet name="fae algo resp" comment="0x26检测参数应答，VD接收到FAE发送的检测参数请求后向其发送参数值或配置结果">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="recver" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="sender" type="uint16" endian="little" hide="true"/>
+        <field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="23" name="op" value="0x26" type="uint8" endian="little" hide="true"/>
+        <field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="30" name="subop" type="uint8" endian="little"/>
+        <field offset="31" name="res" type="uint8" endian="little"/>
+        <field offset="32" name="normalT" type="uint16" endian="big"/>
+        <field offset="34" name="flunctT" type="uint16" endian="big"/>
+        <field offset="36" name="bigThr" type="uint8" endian="big"/>
+        <field offset="37" name="midThr" type="uint8" endian="big"/>
+        <field offset="38" name="litThr" type="uint8" endian="big"/>
+        <field offset="39" name="unThr" type="uint8" endian="big"/>
+        <field offset="40" name="baseX" type="int16" endian="big"/>
+        <field offset="42" name="baseY" type="int16" endian="big"/>
+        <field offset="44" name="baseZ" type="int16" endian="big"/>
+        <field offset="46" name="gain" type="uint8" endian="big"/>
+    </packet>
+    <packet name="fae reinit" comment="0x36重新标定消息请求，FAE在App操作时向某VD发送让其重新标定背景磁场">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="16" name="more" type="bits[7:7]" endian="little"/>-->
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <!--<field offset="19" name="dest" type="uint16" endian="little"/>-->
+        <!--<field offset="21" name="id" type="uint8" endian="little"/>-->
+        <!--<field offset="22" name="len" type="uint8" endian="little"/>-->
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xF6" type="uint8" endian="little" format="0x%02X" hide="true"/>
+        <field offset="32" name="ts" type="byte[6]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="fae reinit resp" comment="0x36重新标定消息应答，VD在接收到FAE发送的请求并执行标定后向FAE发送标定结果">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <!--<field offset="11" name="recver" type="uint16" endian="little"/>-->
+        <!--<field offset="13" name="sender" type="uint16" endian="little"/>-->
+        <field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="23" name="op" value="0x36" type="uint8" endian="little" hide="true"/>
+        <field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="30" name="res" type="uint8" endian="little"/>
+        <field offset="31" name="normalT" type="uint16" endian="big"/>
+        <field offset="33" name="flunctT" type="uint16" endian="big"/>
+        <field offset="35" name="bigThr" type="uint8" endian="big"/>
+        <field offset="36" name="midThr" type="uint8" endian="big"/>
+        <field offset="37" name="litThr" type="uint8" endian="big"/>
+        <field offset="38" name="unThr" type="uint8" endian="big"/>
+        <field offset="39" name="baseX" type="int16" endian="big"/>
+        <field offset="41" name="baseY" type="int16" endian="big"/>
+        <field offset="43" name="baseZ" type="int16" endian="big"/>
+        <field offset="45" name="gain" type="uint8" endian="big"/>
+    </packet>
+    <packet name="node req" comment="节点信息请求消息，OTA向RP/AP发送让其返回设备编码和硬软件版本">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <!--<field offset="11" name="recver" type="uint16" endian="little"/>-->
+        <!--<field offset="13" name="sender" type="uint16" endian="little"/>-->
+        <field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="23" name="op" value="0xBC" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>-->
+        <field offset="30" name="type" type="uint8" endian="big"/>
+    </packet>
+    <packet name="node resp" comment="节点信息应答消息，RP/AP接收到OTA请求时向OTA发送告知其设备编码和硬软件版本">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <!--<field offset="11" name="recver" type="uint16" endian="little"/>-->
+        <!--<field offset="13" name="sender" type="uint16" endian="little"/>-->
+        <field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="23" name="op" value="0x3C" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>-->
+        <field offset="30" name="HwVer" type="uint8" endian="big" format="0x%02X"/>
+        <field offset="31" name="FwVer" type="uint8" endian="big" format="0x%02X"/>
+    </packet>
+    <packet name="node reset" comment="节点重启消息，OTA在上位机操作时向RP/AP发送让其重启">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <!--<field offset="11" name="recver" type="uint16" endian="little"/>-->
+        <!--<field offset="13" name="sender" type="uint16" endian="little"/>-->
+        <field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="23" name="op" value="0xB1" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>-->
+    </packet>
+    <packet name="node otaexec" comment="节点更新执行消息，OTA在上位机操作时向RP/AP发送让其启动无线更新">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <!--<field offset="11" name="recver" type="uint16" endian="little"/>-->
+        <!--<field offset="13" name="sender" type="uint16" endian="little"/>-->
+        <!--<field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>-->
+        <field offset="23" name="op" value="0x99" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>-->
+        <field offset="30" name="type" type="uint8" endian="big"/>
+        <field offset="31" name="ver" type="uint8" endian="big" format="0x%02X"/>
+        <field offset="32" name="dest" type="byte[8]" endian="big" format="%02X"/>
+        <field offset="40" name="mode" type="uint8" endian="big"/>
+    </packet>
+    <packet name="route req" comment="路由请求消息，源节点向邻居发送以请求到目标节点的路由，可能经多个节点中转">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x85 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="origseq" type="uint16" endian="little"/>
+        <field offset="15" name="orig" type="uint16" endian="little"/>
+        <field offset="17" name="hops" type="uint16" endian="little"/>
+        <field offset="19" name="dest" type="uint16" endian="little"/>
+        <field offset="21" name="rreq" type="uint8" endian="little"/>
+    </packet>
+    <packet name="route rep" comment="路由应答消息，目标节点接收到对自己的路由请求后向源节点发送，可能经多个节点中转">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x86 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="rreq" type="uint8" endian="little"/>
+        <field offset="16" name="hops" type="uint8" endian="little"/>
+        <field offset="17" name="dest" type="uint16" endian="little"/>
+        <field offset="19" name="orig" type="uint16" endian="little"/>
+    </packet>
+    <packet name="reinit cmd" comment="0x36重新标定消息请求，在FES操作向某VD发送让其重新标定背景磁场">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="16" name="more" type="bits[7:7]" endian="little"/>
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <!--<field offset="19" name="dest" type="uint16" endian="little"/>-->
+        <!--<field offset="21" name="id" type="uint8" endian="little"/>-->
+        <!--<field offset="22" name="len" type="uint8" endian="little"/>-->
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xB6" type="uint8" endian="little" format="0x%02X" hide="true"/>
+    </packet>
+    <packet name="otaexec cmd" comment="0x19更新执行消息请求，FES或OTA向某VD发送让其启动更新线程进行无线升级">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="16" name="more" type="bits[7:7]" endian="little"/>-->
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <!--<field offset="19" name="dest" type="uint16" endian="little"/>-->
+        <!--<field offset="21" name="id" type="uint8" endian="little"/>-->
+        <!--<field offset="22" name="len" type="uint8" endian="little"/>-->
+        <!--<field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>-->
+        <field offset="31" name="op" value="0x99" type="uint8" endian="little" format="0x%02X" hide="true"/>
+        <field offset="38" name="role" type="uint8" endian="little"/>
+        <field offset="39" name="ver" type="uint8" endian="little" format="0x%02X"/>
+        <field offset="40" name="target" type="byte[8]" endian="big" format="%02X"/>
+        <field offset="48" name="mode" type="uint8" endian="little"/>
+        <field offset="49" name="count" type="uint8" endian="little"/>
+        <field offset="50" name="auto" type="uint8" endian="little"/>
+    </packet>
+    <packet name="reset cmd" comment="0x31重启消息命令，FES或FAE向某VD/RP发送让其重启">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="16" name="more" type="bits[7:7]" endian="little"/>
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <!--<field offset="19" name="dest" type="uint16" endian="little"/>-->
+        <!--<field offset="21" name="id" type="uint8" endian="little"/>-->
+        <!--<field offset="22" name="len" type="uint8" endian="little"/>-->
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xB1" type="uint8" endian="little" format="0x%02X" hide="true"/>
+    </packet>
+    <packet name="freset cmd" comment="0x32恢复出厂消息命令，FES或FAE向某VD/RP发送让其恢复出厂设置">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="16" name="more" type="bits[7:7]" endian="little"/>
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <!--<field offset="19" name="dest" type="uint16" endian="little"/>-->
+        <!--<field offset="21" name="id" type="uint8" endian="little"/>-->
+        <!--<field offset="22" name="len" type="uint8" endian="little"/>-->
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" value="0xB2" type="uint8" endian="little" format="0x%02X" hide="true"/>
+    </packet>
+    <packet name="freset ack" comment="0x32恢复出厂应答，VD/RP完成恢复出厂设置后向FAE发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="recver" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="sender" type="uint16" endian="little" hide="true"/>
+        <field offset="17" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="23" name="op" value="0x32" type="uint8" endian="little" hide="true"/>
+        <field offset="24" name="ts" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="30" name="res" value="0x00" type="uint8" endian="little" hide="true"/>
+    </packet>
+    <packet name="netcmd req" comment="下行命令请求，已激活的VD再次被强磁激活后周期性发送，RP/AP收到请求时若有对应命令则向该VD发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x01" type="uint8" endian="little" hide="true"/>
+        <field offset="16" name="mac" type="byte[8]" endian="big" format="%02X"/>
+        <field offset="24" name="ver" type="uint8" endian="big" format="0x%02X"/>
+    </packet>
+    <packet name="netcmd cmd" comment="下行命令命令，RP/AP缓存了目标为某VD的下行命令、接收到请求后向该VD发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="16" name="more" type="bits[7:7]" endian="little"/>
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+        <field offset="19" name="dest" type="uint16" endian="little"/>
+        <field offset="21" name="id" type="uint8" endian="little"/>
+        <field offset="22" name="len" type="uint8" endian="little"/>
+        <field offset="25" name="dev" type="byte[6]" endian="big" format="%02X"/>
+        <field offset="31" name="op" type="uint8" endian="little" format="0x%02X"/>
+    </packet>
+    <packet name="netcmd ack" comment="下行命令应答，VD从AP/RP接收到目标为自己的下行命令后向该AP/RP发送">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x87 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x03" type="uint8" endian="little" hide="true"/>
+        <field offset="17" name="seqno" type="uint16" endian="little"/>
+    </packet>
+    <packet name="ota summary" comment="无线更新摘要消息，VD/RP/AP/OTA在更新线程启动后不定时发送，向邻居节点告知自己拥有的固件文件版本和页数等">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x38 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="type" value="0x01" type="uint8" endian="little" hide="true"/>
+        <field offset="23" name="objid" type="uint8" endian="big"/>
+        <field offset="24" name="ver" type="uint8" endian="big" format="0x%02X"/>
+        <field offset="25" name="avail" type="uint16" endian="big"/>
+        <field offset="14" name="mode" type="uint8" endian="big"/>
+        <field offset="15" name="dest" type="byte[8]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="ota profile" comment="无线更新元数据，OTA有新版本固件、接收到某VD/RP/AP发送的旧版本更新摘要消息时向其发送，告知新版本固件的版本号、页数等信息">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x38 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="type" value="0x04" type="uint8" endian="little" hide="true"/>
+        <field offset="23" name="objid" type="uint8" endian="big"/>
+        <field offset="24" name="ver" type="uint8" endian="big" format="0x%02X"/>
+        <field offset="25" name="npage" type="uint16" endian="big"/>
+        <field offset="14" name="mode" type="uint8" endian="big"/>
+        <field offset="15" name="dest" type="byte[8]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="ota request" comment="无线更新请求消息，启动了更新的VD/RP/AP向OTA发送以请求下一个页或当前未完成页的数据">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x37 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="15" name="type" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="25" name="objid" type="uint8" endian="big"/>
+        <field offset="26" name="ver" type="uint8" endian="big" format="0x%02X"/>
+        <field offset="27" name="page" type="uint16" endian="big"/>
+        <field offset="29" name="req" type="uint8" endian="big" format="0x%02X"/>
+        <field offset="16" name="mode" type="uint8" endian="big"/>
+        <field offset="17" name="dest" type="byte[8]" endian="big" format="%02X"/>
+    </packet>
+    <packet name="ota packet" comment="无线更新数据消息，OTA接收到某VD/RP/AP发送的无线更新请求消息后根据其请求的页编号和数据包掩码向其发送，包含有效的新固件数据">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x38 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="type" value="0x03" type="uint8" endian="little" hide="true"/>
+        <field offset="23" name="objid" type="uint8" endian="big"/>
+        <field offset="24" name="ver" type="uint8" endian="big" format="0x%02X"/>
+        <field offset="25" name="page" type="uint16" endian="big"/>
+        <field offset="27" name="pkt" type="uint8" endian="big"/>
+        <field offset="28" name="crc" type="uint16" endian="big" format="0x%04X"/>
+        <field offset="14" name="mode" type="uint8" endian="big"/>
+        <field offset="15" name="dest" type="byte[8]" endian="big" format="%02X"/>
+        <field offset="30" name="data" type="byte[64]" endian="big"/>
+    </packet>
+    <packet name="reboot" comment="重启消息，节点重启时发送，包含节点主文件名、设备MAC地址、软件版本等">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x99 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="level" value="0x03" type="uint8" endian="little" hide="true"/>
+        <field offset="14" name="code" value="0x81" type="uint8" endian="little" hide="true"/>
+        <!--<field offset="15" name="lineno" type="uint16" endian="big"/>-->
+        <field offset="17" name="file" type="char[20]" endian="big"/>
+        <field offset="37" name="mac" type="byte[8]" endian="big" format="%02X"/>
+        <field offset="46" name="fwver" type="uint8" endian="big" format="0x%02X"/>
+        <field offset="62" name="power" type="uint8" endian="big"/>
+        <!--<field offset="45" name="hwver" type="uint8" endian="big" format="0x%02X"/>-->
+        <field offset="47" name="commit" type="char[7]" endian="big"/>
+        <field offset="54" name="build" type="char[8]" endian="big"/>
+    </packet>
+    <packet name="gprs rssi" comment="GPRS信号强度，AP在重新建立与服务器连接时发送">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x99 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="level" value="0x03" type="uint8" endian="little" hide="true"/>
+        <field offset="14" name="code" value="0xD3" type="uint8" endian="little" hide="true"/>
+        <field offset="15" name="lineno" type="uint16" endian="big"/>
+        <field offset="17" name="file" type="char[20]" endian="big"/>
+        <field offset="37" name="text" type="char[10]" endian="big"/>
+    </packet>
+    <packet name="log error" comment="运行错误消息，设备程序运行到错误位置时发送该行错误信息">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x99 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="level" value="0x01" type="uint8" endian="little" hide="true"/>
+        <field offset="14" name="code" type="uint8" endian="little" format="0x%02X"/>
+        <field offset="15" name="lineno" type="uint16" endian="big"/>
+        <field offset="17" name="file" type="char[20]" endian="big"/>
+        <field offset="37" name="data" type="byte[30]" endian="big"/>
+    </packet>
+    <packet name="log warn" comment="运行警告消息，设备程序运行到警告位置时发送该行警告信息">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x99 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="level" value="0x02" type="uint8" endian="little" hide="true"/>
+        <field offset="14" name="code" type="uint8" endian="little" format="0x%02X"/>
+        <field offset="15" name="lineno" type="uint16" endian="big"/>
+        <field offset="17" name="file" type="char[20]" endian="big"/>
+        <field offset="37" name="data" type="byte[30]" endian="big"/>
+    </packet>
+    <packet name="log info" comment="运行报告消息，设备程序运行到重要的流程位置时发送该行报告信息">
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x99 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="13" name="level" value="0x03" type="uint8" endian="little" hide="true"/>
+        <field offset="14" name="code" type="uint8" endian="little" format="0x%02X"/>
+        <field offset="15" name="lineno" type="uint16" endian="big"/>
+        <field offset="17" name="file" type="char[20]" endian="big"/>
+        <field offset="37" name="data" type="byte[30]" endian="big"/>
+    </packet>
+    <packet name="app msg" comment="通用App消息">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="20" name="beg" value="0xAA" type="uint8" endian="little" hide="true"/>
+        <field offset="21" name="len" type="uint8" endian="little" hide="true"/>
+        <field offset="22" name="dev" type="byte[6]" endian="big" hide="true"/>
+        <field offset="28" name="op" type="uint8" endian="little" hide="true"/>
+    </packet>
+    <packet name="mesh msg" comment="通用mesh消息">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x84 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="esender" type="uint16" endian="little"/>
+        <field offset="13" name="erecver" type="uint16" endian="little"/>
+        <field offset="15" name="hops" type="uint8" endian="little"/>
+        <field offset="16" name="recver" type="uint16" endian="little"/>
+        <field offset="18" name="sender" type="uint16" endian="little"/>
+        <field offset="20" name="data" type="byte[2]" endian="little"/>
+    </packet>
+    <packet name="unicast msg" comment="通用FAE单播消息">
+        <field offset="5"  name="to" type="uint16" endian="big"/>
+        <field offset="7"  name="from" type="uint16" endian="big" hide="true"/>
+        <field offset="9"  name="channel" value="0x89 0x00" type="uint16" endian="little" hide="true"/>
+        <field offset="11" name="recver" type="uint16" endian="little"/>
+        <field offset="13" name="sender" type="uint16" endian="little"/>
+    </packet>
+</packets>

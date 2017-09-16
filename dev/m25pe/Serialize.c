@@ -26,11 +26,9 @@
 
 *******************************************************************************/
 #include "Serialize.h"
-#include "driverlib.h"
-#include "contiki.h"
-#include "m25pe-arch.h"
+#include "spi.h"
 
-extern int m25pe_dev;
+
 /*******************************************************************************
 Function:     InitSPIMaster(void)
 Arguments:
@@ -64,11 +62,11 @@ void ConfigureSpiMaster(SpiMasterConfigOptions opt)
     return;
   }
 
-  if((int)opt & (int)MaskBit_SelectSlave_Relevant) {
-    if ((int)opt & (int)MaskBit_SlaveSelect) {
-      M25PE_SELECT(m25pe_dev);
+  if(opt & MaskBit_SelectSlave_Relevant) {
+    if (opt & MaskBit_SlaveSelect) {
+      M25PE_SELECT();
     } else {
-      M25PE_DESELECT(m25pe_dev);
+      M25PE_DESELECT();
     }
   }
 }
@@ -116,29 +114,33 @@ Bool Serialize(const CharStream* char_stream_send,
   unsigned char* pChar;
   ST_uint32 length;
   ST_uint32 i;
-  ST_uint8  c;
+//  ST_uint8  c;
 
   ConfigureSpiMaster(optBefore);
 
   length = char_stream_send->length;
   pChar  = char_stream_send->pChar;
   for (i = 0; i < length; i++) {
-    M25PE_SPI_WAITFORTx_BEFORE();
-    M25PE_SPI_TXBUF = *(pChar++);
-    M25PE_SPI_WAITFOREOTx();
-    M25PE_SPI_WAITFOREORx();
-    c = M25PE_SPI_RXBUF;
+    m25pe_write_byte(*(pChar++));
+//    c = m25pe_read_byte();
+//    M25PE_SPI_WAITFORTx_BEFORE();
+//    M25PE_SPI_TXBUF = *(pChar++);
+//    M25PE_SPI_WAITFOREOTx();
+//    M25PE_SPI_WAITFOREORx();
+//    c = M25PE_SPI_RXBUF;
   }
 
-  if(ptrNull != (void*)char_stream_recv) {
+  if(ptrNull != (int)char_stream_recv) {
     length = char_stream_recv->length;
     pChar  = char_stream_recv->pChar;
     for(i = 0; i < length; ++i) {
-      M25PE_SPI_WAITFORTx_BEFORE();
-      M25PE_SPI_TXBUF = 0x00;
-      M25PE_SPI_WAITFOREOTx();
-      M25PE_SPI_WAITFOREORx();
-      *(pChar++) = M25PE_SPI_RXBUF;
+//      m25pe_write_byte(0x00);
+      *(pChar++)= m25pe_read_byte();
+//      M25PE_SPI_WAITFORTx_BEFORE();
+//      M25PE_SPI_TXBUF = 0x00;
+//      M25PE_SPI_WAITFOREOTx();
+//      M25PE_SPI_WAITFOREORx();
+//      *(pChar++) = M25PE_SPI_RXBUF;
     }
   }
 

@@ -1,0 +1,6 @@
+*.log
+*.pid
+.gradle
+bin
+build
+log

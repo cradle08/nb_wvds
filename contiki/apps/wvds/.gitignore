@@ -1,0 +1,6 @@
+*.od
+*.pid
+app.c
+cooja.log*
+deploy*.txt
+jre

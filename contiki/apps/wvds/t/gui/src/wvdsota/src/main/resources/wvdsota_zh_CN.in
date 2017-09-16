@@ -1,0 +1,11 @@
+app.title = WVDS OTA升级
+
+menu.file = 文件
+menu.exit = 退出
+menu.option = 设置
+menu.freset = 恢复出厂
+menu.help = 帮助
+menu.about = 关于
+
+text.about = WVDS OTA升级\n\n
+text.version = 版本号: <version>\n日期: <build>\nGit版本号: <commit>
