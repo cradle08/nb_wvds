@@ -2378,6 +2378,9 @@
                 <name>$PROJ_DIR$\..\..\..\platform\f5310\hal-pmm.h</name>
             </file>
             <file>
+                <name>$PROJ_DIR$\..\..\..\platform\f5310\isr_compat.h</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\..\..\platform\f5310\leds-arch.c</name>
             </file>
             <file>
@@ -2408,5 +2411,14 @@
                 <name>$PROJ_DIR$\..\..\..\platform\f5310\watchdog.c</name>
             </file>
         </group>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\platform\f5310\m25pe-arch.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\platform\f5310\m25pe-arch.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\platform\f5310\platform-conf.h</name>
+        </file>
     </group>
 </project>

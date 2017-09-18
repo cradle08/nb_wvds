@@ -57,7 +57,7 @@
                 </option>
                 <option>
                     <name>RTLibraryPath</name>
-                    <state>$TOOLKIT_DIR$\lib\dlib\dl430fn.r43</state>
+                    <state>$TOOLKIT_DIR$\lib\dlib\dl430xlsfn.r43</state>
                 </option>
                 <option>
                     <name>Input variant</name>
@@ -104,11 +104,11 @@
                 </option>
                 <option>
                     <name>GStackSize2</name>
-                    <state>80</state>
+                    <state>160</state>
                 </option>
                 <option>
                     <name>GHeapSize2</name>
-                    <state>80</state>
+                    <state>160</state>
                 </option>
                 <option>
                     <name>RadioDataModelType</name>
@@ -410,6 +410,7 @@
                     <state>$PROJ_DIR$\apps\aes</state>
                     <state>$PROJ_DIR$\apps\at-cmd</state>
                     <state>$PROJ_DIR$\apps\nb_wvds</state>
+                    <state>$PROJ_DIR$\contiki\</state>
                     <state>$PROJ_DIR$\contiki\apps</state>
                     <state>$PROJ_DIR$\contiki\core</state>
                     <state>$PROJ_DIR$\contiki\core\dev</state>
@@ -2594,6 +2595,9 @@
                 <name>$PROJ_DIR$\..\..\..\platform\f5310\hal-pmm.h</name>
             </file>
             <file>
+                <name>$PROJ_DIR$\..\..\..\platform\f5310\isr_compat.h</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\..\..\platform\f5310\leds-arch.c</name>
             </file>
             <file>
@@ -2624,5 +2628,14 @@
                 <name>$PROJ_DIR$\..\..\..\platform\f5310\watchdog.c</name>
             </file>
         </group>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\platform\f5310\m25pe-arch.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\platform\f5310\m25pe-arch.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\platform\f5310\platform-conf.h</name>
+        </file>
     </group>
 </project>
