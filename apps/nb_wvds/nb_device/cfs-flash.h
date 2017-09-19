@@ -14,7 +14,7 @@
 #elif BOARD_CADRE1120_AP
 #define CFS_START_ADDR  0UL
 #else
-#error "no support"
+//#error "no support"
 #endif
 #endif
 

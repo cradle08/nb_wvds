@@ -2101,60 +2101,33 @@
         <name>apps</name>
         <group>
             <name>aes</name>
-            <file>
-                <name>$PROJ_DIR$\..\..\aes\aes-ccm.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\aes\aes-ccm.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\aes\aes.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\aes\aes.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\aes\netstack-aes.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\aes\netstack-aes.h</name>
-            </file>
         </group>
         <group>
             <name>at-cmd</name>
-            <file>
-                <name>$PROJ_DIR$\..\..\at-cmd\at-cmd.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\at-cmd\at-cmd.h</name>
-            </file>
         </group>
         <group>
             <name>nb_wvds</name>
-            <file>
-                <name>$PROJ_DIR$\..\..\nb_wvds\app.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\nb_wvds\app.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\nb_wvds\cfs-flash.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\nb_wvds\cfs-flash.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\nb_wvds\device.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\nb_wvds\project-conf.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\nb_wvds\VehicleDetection.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\nb_wvds\VehicleDetection.h</name>
-            </file>
+            <group>
+                <name>nb_device</name>
+                <file>
+                    <name>$PROJ_DIR$\nb_device\app.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\nb_device\app.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\nb_device\device.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\nb_device\project-conf.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\nb_device\VehicleDetection.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\nb_device\VehicleDetection.h</name>
+                </file>
+            </group>
         </group>
     </group>
     <group>
@@ -2167,61 +2140,46 @@
             <group>
                 <name>dev</name>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\dev\leds.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\dev\leds.h</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\dev\serial-line.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\dev\serial-line.h</name>
+                    <name>$PROJ_DIR$\..\..\..\contiki\core\dev\watchdog.h</name>
                 </file>
             </group>
             <group>
                 <name>lib</name>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\assert.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\assert.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\assert.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\assert.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\crc16.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\crc16.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\crc16.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\crc16.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\list.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\list.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\list.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\list.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\memb.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\memb.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\memb.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\memb.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\random.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\random.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\random.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\random.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\ringbuf.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\ringbuf.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\ringbuf.h</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\sensors.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\lib\sensors.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\lib\ringbuf.h</name>
                 </file>
             </group>
             <group>
@@ -2230,77 +2188,68 @@
             <group>
                 <name>sys</name>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\autostart.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\autostart.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\autostart.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\autostart.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\clock.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\cc.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\compower.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\clock.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\compower.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\compower.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\ctimer.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\compower.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\ctimer.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\ctimer.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\energest.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\ctimer.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\energest.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\etimer.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\etimer.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\etimer.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\etimer.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\logger.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\logger.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\logger.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\logger.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\process.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\process.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\process.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\process.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\stimer.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\rtimer.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\stimer.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\rtimer.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\timer.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\taskmon.c</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\timer.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\taskmon.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\unixtime.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\timer.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\timer.h</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\unixtime.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\..\..\contiki\core\sys\unixtime.h</name>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\unixtime.h</name>
                 </file>
             </group>
             <file>
-                <name>$PROJ_DIR$\..\..\..\contiki\core\contiki.h</name>
+                <name>$PROJ_DIR$\..\..\contiki\core\contiki.h</name>
             </file>
         </group>
     </group>
@@ -2308,48 +2257,12 @@
         <name>dev</name>
         <group>
             <name>bc95</name>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\bc95\bc95.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\bc95\bc95.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\bc95\uart.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\bc95\uart.h</name>
-            </file>
         </group>
         <group>
             <name>m25pe</name>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\m25pe\c2195.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\m25pe\c2195.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\m25pe\m25pe.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\m25pe\m25pe.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\m25pe\Serialize.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\m25pe\Serialize.h</name>
-            </file>
         </group>
         <group>
             <name>qmc5883</name>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\qmc5883\qmc5883.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\dev\qmc5883\qmc5883.h</name>
-            </file>
         </group>
     </group>
     <group>
@@ -2357,68 +2270,23 @@
         <group>
             <name>f5310</name>
             <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\blink.c</name>
+                <name>$PROJ_DIR$\..\..\platform\f5310\clock.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\clock.c</name>
+                <name>$PROJ_DIR$\..\..\platform\f5310\contiki-f5310-main.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\contiki-conf.h</name>
+                <name>$PROJ_DIR$\..\..\platform\f5310\isr_compat.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\contiki-f5310-main.c</name>
+                <name>$PROJ_DIR$\..\..\platform\f5310\msp430.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\flash.c</name>
+                <name>$PROJ_DIR$\..\..\platform\f5310\msp430.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\hal-pmm.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\hal-pmm.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\isr_compat.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\leds-arch.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\msp430.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\msp430def.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\rtimer-arch.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\spix.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\uart1-putchar.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\uart1x.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\uart3-putchar.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\uart3x.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\..\platform\f5310\watchdog.c</name>
+                <name>$PROJ_DIR$\..\..\platform\f5310\platform-conf.h</name>
             </file>
         </group>
-        <file>
-            <name>$PROJ_DIR$\..\..\..\platform\f5310\m25pe-arch.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\..\platform\f5310\m25pe-arch.h</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\..\platform\f5310\platform-conf.h</name>
-        </file>
     </group>
 </project>

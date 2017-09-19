@@ -35,7 +35,7 @@
 
 #include "platform-conf.h"
 
-#include "mist-conf-const.h"
+//#include "mist-conf-const.h"
 
 #ifndef MIST_CONF_NETSTACK
 #define MIST_CONF_NETSTACK (MIST_CONF_DROWSIE)
@@ -243,7 +243,7 @@
 #define UIP_CONF_PINGADDRCONF    0
 #define UIP_CONF_LOGGING         0
 
-#include "mist-default-conf.h"
+//#include "mist-default-conf.h"
 
 /* include the project config */
 /* PROJECT_CONF_H might be defined in the project Makefile */

@@ -16,8 +16,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "contiki.h"
-#include "mmc3316.h"
-#include "hmc5983.h"
+//#include "mmc3316.h"
+//#include "hmc5983.h"
 #include "app.h"
 
 /*********************************************************************

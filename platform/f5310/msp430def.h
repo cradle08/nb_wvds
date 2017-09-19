@@ -30,7 +30,7 @@
 #ifndef MSP430DEF_H
 #define MSP430DEF_H
 
-#define F_CPU  8000000ul
+//#define F_CPU  8000000ul
 #define MSP430_CPU_SPEED F_CPU
 
 #define MSP430_REQUIRE_CPUON 0
@@ -38,14 +38,66 @@
 #define MSP430_REQUIRE_LPM2 2
 #define MSP430_REQUIRE_LPM3 3
 
-typedef unsigned char  uint8_t;
+
+
+#ifdef __IAR_SYSTEMS_ICC__
+#include <intrinsics.h>
+#include <in430.h>
+#include <msp430.h>
+#define dint() __disable_interrupt()
+#define eint() __enable_interrupt()
+#define __MSP430__ 1
+#define CC_CONF_INLINE
+
+#else /* __IAR_SYSTEMS_ICC__ */
+
+#ifdef __MSPGCC__
+#include <msp430.h>
+#include <legacymsp430.h>
+#else /* __MSPGCC__ */
+#include <io.h>
+#include <signal.h>
+#if !defined(MSP430_MEMCPY_WORKAROUND) && (__GNUC__ < 4)
+#define MSP430_MEMCPY_WORKAROUND 1
+#endif
+#endif /* __MSPGCC__ */
+
+#define CC_CONF_INLINE inline
+
+#endif /* __IAR_SYSTEMS_ICC__ */
+
+#ifndef BV
+#define BV(x) (1 << x)
+#endif
+
+   /*
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#else
+#ifndef uint8_t
+typedef unsigned char   uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned long  uint32_t;
-typedef          char  int8_t;
-typedef          short int16_t;
-typedef          long  int32_t;
+typedef   signed char    int8_t;
+typedef          short  int16_t;
+typedef          long   int32_t;
+#endif
+#endif // !HAVE_STDINT_H 
 
+// These names are deprecated, use C99 names. 
+typedef  uint8_t    u8_t;
+typedef uint16_t   u16_t;
+typedef uint32_t   u32_t;
+typedef  int32_t   s32_t;
 
+// default DCOSYNCH Period is 30 seconds 
+#ifdef DCOSYNCH_CONF_PERIOD
+#define DCOSYNCH_PERIOD DCOSYNCH_CONF_PERIOD
+#else
+#define DCOSYNCH_PERIOD 30
+#endif
+
+*/
 
 
 #endif /* MSP430DEF_H */

@@ -98,7 +98,7 @@ enum {
 #define NV_MSGS_MAXLEN 128
 #define NV_MSGS_MAXNUM 1999
 #else
-#error "no support"
+//#error "no support"
 #endif
 #else /* CONTIKI_TARGET_COOJA */
 #define NV_MSGS_SIZE 1024

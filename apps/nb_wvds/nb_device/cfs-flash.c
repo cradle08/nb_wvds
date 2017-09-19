@@ -1,8 +1,8 @@
 #include "cfs/cfs.h"
 #include "cfs-flash.h"
 #include "lib/crc16.h"
-#include "m25pe.h"
-#include "c2195.h"
+//#include "m25pe.h"
+//#include "c2195.h"
 #include <string.h>
 #include <stddef.h>
 
@@ -42,7 +42,7 @@ int cfs_arch_read(uint32_t addr, uint8_t *buf, uint16_t len)
 #elif BOARD_CADRE1120_AP
   r = m25pe_read(FLASH_B, addr, buf, len);
 #else
-#error "no support"
+//#error "no support"
 #endif
   return r;
 }
@@ -55,7 +55,7 @@ int cfs_arch_write(uint32_t addr, uint8_t *buf, uint16_t len)
 #elif BOARD_CADRE1120_AP
   r = m25pe_write(FLASH_B, addr, buf, len);
 #else
-#error "no support"
+//#error "no support"
 #endif
   return r;
 }

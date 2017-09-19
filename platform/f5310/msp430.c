@@ -31,15 +31,11 @@
  * @(#)$Id: msp430.c,v 1.1 2010/08/24 16:26:38 joxe Exp $
  */
 #include "contiki.h"
-#include "dev/watchdog.h"
-#include "dev/leds.h"
-#include "hal-pmm.h"
+#include "platform-conf.h"
 
-#if WITH_TASKMON
-#include "sys/taskmon.h"
-#endif /* WITH_TASKMON */
-
-//static unsigned long dco_speed;
+//#include "dev/watchdog.h"
+//#include "dev/leds.h"
+//#include "hal-pmm.h"
 
 
 // port init as normal input port
@@ -107,8 +103,8 @@ void msp430_dco_init(uint32_t sped)
   // set p5.4 p5.5 as xtclk port
   P5SEL = 0x30;
   // use x1in x1out(LF) as clock source
-  UCSCTL6 &= ~XT1OFF 
-  UCSCTL6 |= XCAP_3
+  UCSCTL6 &= ~XT1OFF;
+  UCSCTL6 |= XCAP_3;
   //set fll
   __bis_SR_register(SCG0);
   UCSCTL0 = 0x0000;
@@ -120,15 +116,15 @@ void msp430_dco_init(uint32_t sped)
   // wait dco stable
   do {
     // clear xt1/2 dco fault flag
-    UCSCTL7 &= ~(XT1LFOFFG + XT1HFOFFG + XT2OFFG+ DCOFFG);
+    UCSCTL7 &= ~(XT1LFOFFG + XT2OFFG+ DCOFFG);
     // clear fault flag
     SFRIFG1 &= ~OFIFG;
     // delay wait dco stale 
-    __delay_cycsels(10000);
+    __delay_cycles(10000);
     // check oscillator fault flag
   } while(SFRIFG1 & OFIFG);       
   // set aclk smclk mclk clock source
-  UCSCTL4 |= SELA_0 + SELS__DCOCLKDIV + SELM__DCOCLK; //32.768k 4m 8m
+  UCSCTL4 |= SELA_0 + SELS__DCOCLK + SELM__DCOCLK; //32.768k 4m 8m
   eint();
 }
 
@@ -138,9 +134,9 @@ void msp430_cpu_init(uint32_t sped)
   dint();
   //watchdog_init();
   //watchdog_start();
-  init_port();
+  port_init();
   port_mapping();
-  msp430_dco_init(sped)
+  msp430_dco_init(sped);
   eint();
 }
 
