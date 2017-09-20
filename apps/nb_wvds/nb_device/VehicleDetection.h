@@ -15,7 +15,7 @@
  */
 #include <stdint.h>
 #include <stdbool.h>
-#include "contiki.h"
+//#include "contiki.h"
 //#include "mmc3316.h"
 //#include "hmc5983.h"
 #include "app.h"
@@ -75,6 +75,7 @@
 #define HILL_LENGTH 20
 
 #if PARALLEL_SPACE==1
+#define INIT_SAMPLE_PERIOD    1120
 #define STABLE_SAMPLE_PERIOD  560//560//560 //CLOCK_SECOND/2// //ms
 #define DISTURB_SAMPLE_PERIOD 96//96 //192 CLOCK_SECOND/5// //ms
 #elif SERIAL_SPACE==1
@@ -237,13 +238,15 @@
 #define NUM_THRESH            2   // 5，判定波峰及波谷时，斜率大于或小于0的次数
 #define STRONG_MAG_THRESH     2500 //强磁判定的阈值
 #define MAX_SIGNAL_MAG        1500
-
+#define STRONG_MAG_NUM        3   // big mag num for check big mag
+#define WEAK_MAG_NUM          3   // weak mag num for check big mag
+   
 #define BS_BUFFER_LEN 6
 #define UPDATE_BS_T   5
 #define BS_WAIT_NUM   100
-#define INIT_DEPLOYMENT_NUM 15//sniffer 5; deployment 10
-#define INIT_BASELINE_NUM   15//sniffer 10; deployment 20
-#define INIT_THRESHOLD_NUM  20//sniffer 15; deployment 30
+#define INIT_DEPLOYMENT_NUM 10//sniffer 5; deployment 10
+#define INIT_BASELINE_NUM   20//sniffer 10; deployment 20
+#define INIT_THRESHOLD_NUM  30//sniffer 15; deployment 30
 
 #define THUNDER_INTER_TIMEOUT_COUNT  200    // Every 8 seconds
 #define START_PARKING       5  // ignore number of START_PARKING sample when the node restart
@@ -279,6 +282,24 @@ typedef struct {
 } upload_wave;
 #endif
 
+/*
+// 检测算法参数(Algorithm Paramters)  ,define at app.h,move to vehicledetection.h
+struct ALGO {
+  uint16_t magic;
+  uint16_t normalT;         // 平稳采样周期，以毫秒为单位
+  uint16_t flunctT;         // 波动采样周期，以毫秒为单位
+  uint8_t big_occ_thresh;   // 快速有车判决阈值
+  uint8_t mid_occ_thresh;   // 平稳后有车判决阈值
+  uint8_t litt_occ_thresh;  // 低磁车判决阈值
+  uint8_t unocc_thresh;     // 无车判决阈值
+  uint8_t axis_stable_threshold;  // xyz stable thresh ...
+//  uint8_t gain_hmc5983;     // 磁传感器增益
+  uint8_t status;           // 车位状态
+  int16_t base_line[3];     // 背景磁场基线值
+  uint16_t crc;             // ALGO的CRC16校验和
+};
+
+
 typedef struct{
   int16_t x;
   int16_t y;
@@ -286,6 +307,7 @@ typedef struct{
 } Sample_Struct;
 
 extern Sample_Struct One_Sample;
+*/
 
 typedef struct {
   int32_t sum;
@@ -306,16 +328,22 @@ typedef struct {
   uint8_t len; // the length of valid value
 } bs_buf_t;
 
+enum {
+  EN_LEAVE =0,
+  EN_PARK = 1,
+  EN_BIG_MAG = 2,
+  EN_INIT = 3,
+  EN_INIT_FAILL = 4
+}; // ...
 
 typedef struct {
   /*status
    *parking space status
    *0 is vacant
    *1 is occupance
-   *2 待激活节点
+   *2 强磁信号
    *3 初始化
-   *4 待复位
-   *5 待激活RF
+   
    */
   uint8_t status;
   uint8_t st_before_fluct;//波动前的状态
@@ -352,7 +380,7 @@ typedef struct {
   uint8_t initialize_flag;
 
   //重新标定
-  bool re_initial_falg;
+  bool re_initial_flag;
 
   //big_threshold用于快速车辆检测
   uint16_t occ_big_threshold;
@@ -364,6 +392,7 @@ typedef struct {
   uint16_t occ_little_threshold;
 
   uint8_t unocc_threshold; // to judge the parking space is unoccupied
+  uint8_t axis_stable_threshold; // xyz data stable thresh ...
 
   /*
   the VD is invoked by a constant magnetic signal
@@ -371,6 +400,7 @@ typedef struct {
   bool invoke_flag;
 
   bool hist_is_strong_mag;
+  bool is_strong_mag; // ...
 
    /*
   等待强磁离开
@@ -388,6 +418,7 @@ typedef struct {
   uint8_t num_count;
   uint8_t rf_num_count;
   uint8_t strong_num_count;
+  uint8_t weak_num_count;
   uint8_t init_num_count;
 
 
@@ -499,42 +530,83 @@ typedef struct
   int16_t latest_base_line[3];
 } NVapp;
 #endif
+
 /*********************************************************************
- * FUNCTIONS
- */
-extern uint8_t enter_leave_branch;
-extern uint8_t gain_hmc5983;
-extern bool reset_flag;
-extern uint16_t digital_resolution;
-extern uint8_t Parking_Algorithm( void);
-extern void Set_Scale(uint8_t amr_scale, uint8_t b_scale, unsigned char i_scale);
-extern int16_t Hex2Int(unsigned char *buf, unsigned char i);
-extern void Variant_Init(void);
-extern void Set_Activated_Flag(int flag);
-extern void Set_Activated_Callback(void (*f)(void));
-#if IS_SNIFFER_VERSION==0
-extern int Set_Algorithm_Parameters(struct ALGO * paras, bool is_from_pc);
-extern void Get_Algorithm_Parameters(struct ALGO * paras);
-#endif
+* LOCAL FUNCTIONS
+*/
+bool Space_Status(uint16_t a_value, uint16_t b_value, uint8_t CURR_DOUBLE_THRSH, uint8_t CURR_THIRD_THRSH);
+void Raw_Signal_Smooth(cardet_axis_t* axis);
+void Base_Line_Smooth(void);
+void Raw_Data_Smooth(void);
+void Set_Raw_Value(void);
+void Adaptive_Sampling(void);
+uint8_t Is_Over_Thresh(uint8_t CURR_SINGLE_THRSH, uint8_t CURR_DOUBLE_THRSH, uint8_t CURR_THIRD_THRSH);
+void Compute_Change(void);
+void Car_Leaved_Init(void);
+uint8_t Is_Car_Leaved(uint8_t ca, uint8_t cb);
+uint8_t Is_Below_Thresh(uint8_t one_thresh, int8_t bs_branch);
+void Deal_Arrival_Error(void);
+void Set_New_Change(void);
+bool Is_All_Zero(int16_t a_array[]);
+void Reset_Base_Line(void);
+bool Over_Main_Thresh(uint16_t t0, uint16_t t1, uint16_t t2, uint8_t main_thresh);
+void Car_Leave_Functions(uint8_t leave_num);
+void Car_Arrival_Functions(uint8_t arrival_num);
+uint8_t Is_Base_Car_Leaved(uint8_t ca, uint8_t cb);
+void XYZ_IS_Fluctuation(void);
+void XYZ_IS_Stable(void);
+void Signal_IS_Stable(void);
+void Set_Hill_Valley(void);
+void IS_Parking(void);
+void IS_Leaving(void);
+void Set_His_Value(void);
+void Reset_Is_Thunder(void);
+void Set_Before_Smooth(void);
+void Set_Before_Hill(void);
+void Set_After_Hill(void);
+void Calculate_Amplitude(void);
+void Check_Hill_Amplitude(void);
+void Set_Before_Fluctuate(void);
+void Set_After_Fluctuate(void);
+bool Is_Strong_Magnetic(void);
+//int16_t Compute_Number(int16_t c_num, uint8_t a_num, uint8_t b_num);
+int16_t Compute_Number(int16_t x1, int16_t x2, uint8_t a_num, uint8_t b_num);
+// function for quick response
+void Fast_Arrival_Response(void);
+void Fast_Leaving_Response(void);
+bool Base_Smooth_Check(void);
+void Unfluctuate_Parking(void);
+static bool changes_is_all_zero(uint8_t cId);
+uint8_t Average_Over_Thresh(uint8_t a_thresh);
+uint8_t Smooth_Base_Status(uint16_t a_thresh);
+//static bool base_is_all_zero(void);
+uint8_t Entering_Drift(void);
+void Init_process(void);
+void Statistic_Wave_Shape(void);
+void Record_Long_Stable(void);
+uint8_t Is_Change_Sim(uint8_t ca, uint8_t cb);
+void Adaptive_base_line(void);
+void Fill_base_buf(bs_buf_t* bs_buf, int16_t current_value);
+void Update_base_line(cardet_axis_t* axis);//bs_buf_t* bs_buf, smooth_buf_t* smooth);
+void Reset_After_Strong_Mag(void);
 
-//激活RF通过AMR
-#if ACTIVATE_RF_BY_AMR==1
-extern void Activate_RF(void);
-#endif
+bool check_constant_signal(uint8_t activate_branch);
+uint8_t wait_and_reset(void);
+void Set_AMR_Period(int period); // reset sample time ...
+uint16_t Get_AMR_Period(); //
+void Re_Init_Request(); // re init algorithm ...
+int Set_Algorithm_Parameters(struct ALGO * paras);
+void Get_Algorithm_Parameters(struct ALGO * paras);
+void Variant_Init();
 
-//上传波形
-#if UP_HILLS==1
-extern void Set_UP_HILLS(upload_wave * info);
-#endif
-#if DEBUG_OUT==1
-extern void WriteOutFile(int32_t x_value, char * strname, FILE *ofile);
-#endif
-extern void Set_AMR_Period(int sample_period);
-extern void Re_Init_Algorithm(void);
-extern void Re_Calibrate_Success(bool is_success);
-#if defined ( NV_INIT )
-extern void Read_Vaule_NV(NVapp *appInfo);
-extern void Write_Vaule_NV(NVapp *aInfo);
-#endif
-//extern int16_t Compute_Number(int16_t c_num, uint8_t a_num, uint8_t b_num);
+#define car_leave_change_is_all_zero() changes_is_all_zero(CAR_LEAVE)
+#define car_enter_change_is_all_zero() changes_is_all_zero(CAR_ENTER)
+#define new_leave_change_is_all_zero() changes_is_all_zero(NEW_CAR_LEAVE)
+#define new_enter_change_is_all_zero() changes_is_all_zero(NEW_CAR_ENTER)
+#define base_enter_change_is_all_zero() changes_is_all_zero(BASE_ENTER)
+#define base_leave_change_is_all_zero() changes_is_all_zero(BASE_LEAVE)
+#define long_leave_change_is_all_zero() changes_is_all_zero(LONG_LEAVE)
+
+
+
 #endif /* VEHICLEDETECTION_H */

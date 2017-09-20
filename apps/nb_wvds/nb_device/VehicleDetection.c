@@ -11,15 +11,21 @@ Description:    This file contains the Vehicle Detection algorithm.
 * INCLUDES
 */
 #include "stdlib.h"
+//#include "main_conf.h"
 #include "VehicleDetection.h"
-#include "lib/random.h"
-#include "lib/crc16.h"
+//#include "lib/random.h"
+//#include "lib/crc16.h"
 #include "app.h"
+#include "stdlib.h"
+//#include "crc16.h"
 
 /*********************************************************************
 * GLOBAL VARIABLES
-*/
-Sample_Struct One_Sample;
+*/ 
+ extern struct Sample_Struct One_Sample; // xyz data form app ...
+ extern struct ALGO algo; // algorithm data form app ...
+
+
 
 /*********************************************************************
 * LOCAL VARIABLES
@@ -47,11 +53,12 @@ bool init_base_line_flag=false;
 int16_t dist1[3]={0,0,0};
 int16_t dist2[3]={0,0,0};
 uint8_t dist_count=0;
+uint16_t sampleT = 0; //...
+uint8_t enter_leave_branch=0; //标记车辆驶入或驶离的分支，调试用...
 
+//extern uint8_t Get_Gain_HMC5983(void);
+//extern void Set_Gain_HMC5983(uint8_t gain);
 
-extern uint8_t Get_Gain_HMC5983(void);
-extern void Set_Gain_HMC5983(uint8_t gain);
-static struct ALGO algo_para; // 算法参数
 
 #if (defined BS_DEBUG) && (BS_DEBUG == true)
 flag_value_t flags_value;
@@ -69,75 +76,7 @@ int16_t sample_period=0;
 void WriteWaveInfo(uint8_t wave);
 void Debug_Adaptive_BS(void);
 #endif
-/*********************************************************************
-* LOCAL FUNCTIONS
-*/
-bool Space_Status(uint16_t a_value, uint16_t b_value, uint8_t CURR_DOUBLE_THRSH, uint8_t CURR_THIRD_THRSH);
-void Raw_Signal_Smooth(cardet_axis_t* axis);
-void Base_Line_Smooth(void);
-void Raw_Data_Smooth(void);
-void Set_Raw_Value(void);
-void Adaptive_Sampling(void);
-uint8_t Is_Over_Thresh(uint8_t CURR_SINGLE_THRSH, uint8_t CURR_DOUBLE_THRSH, uint8_t CURR_THIRD_THRSH);
-void Compute_Change(void);
-void Car_Leaved_Init(void);
-uint8_t Is_Car_Leaved(uint8_t ca, uint8_t cb);
-uint8_t Is_Below_Thresh(uint8_t one_thresh, int8_t bs_branch);
-void Deal_Arrival_Error(void);
-void Set_New_Change(void);
-bool Is_All_Zero(int16_t a_array[]);
-void Reset_Base_Line(void);
-bool Over_Main_Thresh(uint16_t t0, uint16_t t1, uint16_t t2, uint8_t main_thresh);
-void Car_Leave_Functions(uint8_t leave_num);
-void Car_Arrival_Functions(uint8_t arrival_num);
-uint8_t Is_Base_Car_Leaved(uint8_t ca, uint8_t cb);
-void XYZ_IS_Fluctuation(void);
-void XYZ_IS_Stable(void);
-void Signal_IS_Stable(void);
-void Set_Hill_Valley(void);
-void IS_Parking(void);
-void IS_Leaving(void);
-void Set_His_Value(void);
-void Reset_Is_Thunder(void);
-void Set_Before_Smooth(void);
-void Set_Before_Hill(void);
-void Set_After_Hill(void);
-void Calculate_Amplitude(void);
-void Check_Hill_Amplitude(void);
-void Set_Before_Fluctuate(void);
-void Set_After_Fluctuate(void);
-bool Is_Strong_Magnetic(void);
-//int16_t Compute_Number(int16_t c_num, uint8_t a_num, uint8_t b_num);
-int16_t Compute_Number(int16_t x1, int16_t x2, uint8_t a_num, uint8_t b_num);
-// function for quick response
-void Fast_Arrival_Response(void);
-void Fast_Leaving_Response(void);
-bool Base_Smooth_Check(void);
-void Unfluctuate_Parking(void);
-static bool changes_is_all_zero(uint8_t cId);
-uint8_t Average_Over_Thresh(uint8_t a_thresh);
-uint8_t Smooth_Base_Status(uint16_t a_thresh);
-//static bool base_is_all_zero(void);
-uint8_t Entering_Drift(void);
-void Init_process(void);
-void Statistic_Wave_Shape(void);
-void Record_Long_Stable(void);
-uint8_t Is_Change_Sim(uint8_t ca, uint8_t cb);
-void Adaptive_base_line(void);
-void Fill_base_buf(bs_buf_t* bs_buf, int16_t current_value);
-void Update_base_line(cardet_axis_t* axis);//bs_buf_t* bs_buf, smooth_buf_t* smooth);
-void Reset_After_Strong_Mag(void);
 
-void check_constant_signal(uint8_t activate_branch);
-void wait_and_reset(void);
-
-#define car_leave_change_is_all_zero() changes_is_all_zero(CAR_LEAVE)
-#define car_enter_change_is_all_zero() changes_is_all_zero(CAR_ENTER)
-#define new_leave_change_is_all_zero() changes_is_all_zero(NEW_CAR_LEAVE)
-#define new_enter_change_is_all_zero() changes_is_all_zero(NEW_CAR_ENTER)
-#define base_enter_change_is_all_zero() changes_is_all_zero(BASE_ENTER)
-#define base_leave_change_is_all_zero() changes_is_all_zero(BASE_LEAVE)
-#define long_leave_change_is_all_zero() changes_is_all_zero(LONG_LEAVE)
 
 #if (defined BS_DEBUG) && (BS_DEBUG == true)
 static void _debug(uint8_t field);
@@ -156,6 +95,129 @@ void delay_call_up(void);
 #endif
 
 void (*activated_cb)(void);
+
+
+// reset sample period
+void Set_AMR_Period(int period)
+{
+  if (period < 16) {
+    return;
+  }
+//  sampleT = ((uint32_t)period * CLOCK_SECOND) / 1000; // 将在本次采样完成后生效
+  sampleT = period; // 将在本次采样完成后生效
+}
+
+// get sample period
+uint16_t Get_AMR_Period() // app need call this func to set sample frequect
+{
+  return sampleT;
+  
+}
+
+ // re init algorithm ...
+void Re_Init_Request()
+{
+  signal.re_initial_flag = true;
+  signal.initialize_flag = 0;
+  signal.wait_flag = false;
+}
+
+//void Save_Algorithm_Parameters(void)
+//{
+#if WRITE_ALGO_FLASH==1
+//  Get_Algorithm_Parameters(&algo_para); //为struct ALGO algo赋值
+ // algo_para.crc = crc16_data((uint8_t*)&algo_para, sizeof(struct ALGO)-2, CRC_INIT);
+  //nv_write(NV_ALGO_ADDR, (uint8_t*)&algo_para, sizeof(struct ALGO));//algo的值写flash
+//#endif
+//}
+//#if IS_SNIFFER_VERSION==0
+/*********************************************************************
+* @fn      Set_Algorithm_Parameters
+*
+* @brief   Setting the Algorithm_Parameters by command dissemination
+*
+* @param   paras: the parameters of algorithm
+*          is_from_pc=true 是从上位机下发的指令配置信息，需要保存到flash
+*          is_from_pc=false 重启之后从flash处获得参数，或是初始化的默认值，不需要写flash
+*
+* @return  none
+*/
+int Set_Algorithm_Parameters(struct ALGO * paras)
+{
+  uint8_t i=0;
+  //occ_thresh must bigger than unocc_thresh
+  if(paras->big_occ_thresh < paras->unocc_thresh)
+    return 1;
+
+  //range limit
+  //if(paras->big_occ_thresh > 50 && paras->big_occ_thresh < 200)
+  {
+    signal.occ_big_threshold = paras->big_occ_thresh;
+    signal.occ_mid_threshold = paras->mid_occ_thresh;
+    signal.occ_little_threshold = paras->litt_occ_thresh;
+    signal.axis_stable_threshold = paras->axis_stable_threshold; // ...
+  }
+  //if(paras->unocc_thresh > 15 && paras->unocc_thresh < 100)
+   signal.unocc_threshold = paras->unocc_thresh;
+
+  signal.stable_sample_freq = paras->normalT;
+  signal.disturb_sample_freq = paras->flunctT;
+ /// Set_Gain_HMC5983(paras->gain_hmc5983);
+
+  //set value for baseline 
+  for(i=0;i<3;i++)
+  {
+    XYZ[i].adaptive_base_line = paras->base_line[i];
+    XYZ[i].setup_base_line = paras->base_line[i];
+    XYZ[i].base_line = paras->base_line[i];
+  }
+
+  signal.status=paras->status;
+
+  //通过上位机配置参数，新参数写flash
+ // if(is_from_pc)
+  //{
+  //  Save_Algorithm_Parameters();
+ // }
+
+  return 0;
+}
+
+
+/*********************************************************************
+* @fn      Get_Algorithm_Parameters
+*
+* @brief   Get the Algorithm_Parameters by command dissemination
+*
+* @param   none
+*
+* @return  none
+*/
+
+void Get_Algorithm_Parameters(struct ALGO * paras)
+{
+  uint8_t i=0;
+  paras->magic = NV_MAGIC;
+  paras->big_occ_thresh = signal.occ_big_threshold;
+  paras->mid_occ_thresh = signal.occ_mid_threshold;
+  paras->litt_occ_thresh =signal.occ_little_threshold;
+  paras->unocc_thresh = signal.unocc_threshold;
+  paras->flunctT = signal.disturb_sample_freq;
+  paras->normalT = signal.stable_sample_freq;
+  paras->axis_stable_threshold = signal.axis_stable_threshold;
+ // paras->gain_hmc5983 = Get_Gain_HMC5983();
+  //set value for baseline
+  for(i=0;i<3;i++)
+  {
+    paras->base_line[i] = XYZ[i].adaptive_base_line;
+  }
+  paras->status = signal.status;
+}
+#endif
+
+
+
+
 /*********************************************************************
 * GLOBAL FUNCTIONS
 */
@@ -181,7 +243,7 @@ void Thershold_Init_By_Gain()
     XYZ[k].hist_short_smooth = 0;
     XYZ[k].hist_raw_value = 0;
     XYZ[k].setup_base_line = 0;
-    XYZ[k].stable_thresh = STABLE_TH;
+    XYZ[k].stable_thresh = STABLE_TH;  // 25
     //XYZ[k].unoccupied_thresh = UNOCCUPIED_TH;
     XYZ[k].long_stable_value=0;
 
@@ -218,8 +280,10 @@ void Thershold_Init_By_Gain()
   signal.num_count=0;
   signal.rf_num_count=0;
   signal.init_num_count=0;
+  signal.weak_num_count = 0; // ...
   signal.strong_num_count=0;
-  signal.re_initial_falg=false;
+  signal.is_strong_mag = false; //...
+  signal.re_initial_flag=false;
   signal.activate_rf=0;
   signal.compute_long_bs=false;
   signal.fuse_status=0;
@@ -235,38 +299,6 @@ void Thershold_Init_By_Gain()
   signal.is_thunder[0] = false;
   signal.is_thunder[1] = false;
 
-
-  /*else {
-    switch(algo.gain_hmc5983) {
-    case 0:
-      ratio=1370*10/default_gain; //Gain Configuration 1370
-      break;
-    case 1:
-      ratio=1090*10/default_gain;    //Gain Configuration 1090
-      break;
-    case 2:
-      ratio=820*10/default_gain;   //Gain Configuration 820
-      break;
-    case 3:
-      ratio=660*10/default_gain;   //Gain Configuration 660
-      break;
-    case 4:
-      ratio=440*10/default_gain;  //Gain Configuration 440
-      break;
-    case 6:
-      ratio=330*10/default_gain;   //Gain Configuration 330
-      break;
-    case 7:
-      ratio=230*10/default_gain;  //Gain Configuration 230
-      break;
-    default:
-      break;
-    }
-    signal.occ_little_threshold = PARKING_THRESHOLD_L*ratio/10;
-    signal.occ_mid_threshold = PARKING_THRESHOLD_B*ratio/10;
-    signal.occ_big_threshold = PARKING_THRESHOLD_F*ratio/10;
-    signal.unocc_threshold = UNOCC_THRSHOLD*ratio/10;
-  }*/
 }
 
 /*********************************************************************
@@ -280,13 +312,13 @@ void Thershold_Init_By_Gain()
 */
 void Re_Init_Algorithm()
 {
-  //if(!signal.re_initial_falg)
-  {
+  //if(!signal.re_initial_flag)
+  //{
     Thershold_Init_By_Gain();
-    signal.re_initial_falg=true;
-    signal.wait_flag=false;
+ //   signal.re_initial_flag=false;//signal.re_initial_flag=true;
+ //   signal.wait_flag=false;
     Set_AMR_Period(1120);  //调整采样周期为1秒
-  }
+  //}
 }
 
 
@@ -303,112 +335,25 @@ void Variant_Init()
 {
   Thershold_Init_By_Gain();
   signal.wait_flag=false;
-  signal.invoke_flag=false;
-
+  signal.invoke_flag=true; // change to true for test ...
+   
   {
-    signal.stable_sample_freq = STABLE_SAMPLE_PERIOD; //CLOCK_SECOND / 2
-    signal.disturb_sample_freq = DISTURB_SAMPLE_PERIOD; //CLOCK_SECOND / 5
-    signal.occ_little_threshold = PARKING_THRESHOLD_L;
-    signal.occ_mid_threshold = PARKING_THRESHOLD_B;
-    signal.occ_big_threshold = PARKING_THRESHOLD_F;
-    signal.unocc_threshold = UNOCC_THRSHOLD;
+    signal.stable_sample_freq = STABLE_SAMPLE_PERIOD; //CLOCK_SECOND // 560
+    signal.disturb_sample_freq = DISTURB_SAMPLE_PERIOD; //CLOCK_SECOND // 96
+    signal.occ_little_threshold = PARKING_THRESHOLD_L; //75
+    signal.occ_mid_threshold = PARKING_THRESHOLD_B; //120
+    signal.occ_big_threshold = PARKING_THRESHOLD_F; //180
+    signal.unocc_threshold = UNOCC_THRSHOLD; //50
+    signal.axis_stable_threshold = STABLE_TH; //25 ...
   }
+  sampleT = INIT_SAMPLE_PERIOD; // 1120...
 
 #if UP_HILLS==1
   Init_Upload_Struct();
 #endif
 }
 
-void Save_Algorithm_Parameters(void)
-{
-#if WRITE_ALGO_FLASH==1
-  Get_Algorithm_Parameters(&algo_para); //为struct ALGO algo赋值
-  algo_para.crc = crc16_data((uint8_t*)&algo_para, sizeof(struct ALGO)-2, CRC_INIT);
-  nv_write(NV_ALGO_ADDR, (uint8_t*)&algo_para, sizeof(struct ALGO));//algo的值写flash
-#endif
-}
-#if IS_SNIFFER_VERSION==0
-/*********************************************************************
-* @fn      Set_Algorithm_Parameters
-*
-* @brief   Setting the Algorithm_Parameters by command dissemination
-*
-* @param   paras: the parameters of algorithm
-*          is_from_pc=true 是从上位机下发的指令配置信息，需要保存到flash
-*          is_from_pc=false 重启之后从flash处获得参数，或是初始化的默认值，不需要写flash
-*
-* @return  none
-*/
-int Set_Algorithm_Parameters(struct ALGO * paras, bool is_from_pc)
-{
-  uint8_t i=0;
-  //occ_thresh must bigger than unocc_thresh
-  if(paras->big_occ_thresh < paras->unocc_thresh)
-    return 1;
 
-  //range limit
-  //if(paras->big_occ_thresh > 50 && paras->big_occ_thresh < 200)
-  {
-    signal.occ_big_threshold = paras->big_occ_thresh;
-    signal.occ_mid_threshold = paras->mid_occ_thresh;
-    signal.occ_little_threshold = paras->litt_occ_thresh;
-  }
-  //if(paras->unocc_thresh > 15 && paras->unocc_thresh < 100)
-    signal.unocc_threshold = paras->unocc_thresh;
-
-  signal.stable_sample_freq = paras->normalT;
-  signal.disturb_sample_freq = paras->flunctT;
-  Set_Gain_HMC5983(paras->gain_hmc5983);
-
-  //set value for baseline
-  for(i=0;i<3;i++)
-  {
-    XYZ[i].adaptive_base_line = paras->base_line[i];
-    XYZ[i].setup_base_line = paras->base_line[i];
-    XYZ[i].base_line = paras->base_line[i];
-  }
-
-  signal.status=paras->status;
-
-  //通过上位机配置参数，新参数写flash
-  if(is_from_pc)
-  {
-    Save_Algorithm_Parameters();
-  }
-
-  return 0;
-}
-
-
-/*********************************************************************
-* @fn      Get_Algorithm_Parameters
-*
-* @brief   Get the Algorithm_Parameters by command dissemination
-*
-* @param   none
-*
-* @return  none
-*/
-
-void Get_Algorithm_Parameters(struct ALGO * paras)
-{
-  uint8_t i=0;
-  paras->magic = NV_MAGIC;
-  paras->big_occ_thresh = signal.occ_big_threshold;
-  paras->mid_occ_thresh = signal.occ_mid_threshold;
-  paras->litt_occ_thresh =signal.occ_little_threshold;
-  paras->unocc_thresh = signal.unocc_threshold;
-  paras->flunctT = signal.disturb_sample_freq;
-  paras->normalT = signal.stable_sample_freq;
-  paras->gain_hmc5983 = Get_Gain_HMC5983();
-  //set value for baseline
-  for(i=0;i<3;i++)
-  {
-    paras->base_line[i] = XYZ[i].adaptive_base_line;
-  }
-  paras->status = signal.status;
-}
-#endif
 
 
 /*********************************************************************
@@ -428,84 +373,105 @@ void Get_Algorithm_Parameters(struct ALGO * paras)
 */
 uint8_t Parking_Algorithm(void)
 {
-
+  uint8_t re_value = 3;
   signal.b_status = 0;
-  //  bool no_car=false;
-#if (defined BS_DEBUG) && (BS_DEBUG == true)
-  Debug_Init();
-#endif
+  
+ 
 
   //the VD is invoked by detecting the constant magnetic signal five times in succession
   //当状态从2跳变为3表示激活完成
-#if IS_SNIFFER_VERSION==0
-  if(!signal.invoke_flag)
+//#if IS_SNIFFER_VERSION==0  //0
+/*  if(!signal.invoke_flag)
   {
     check_constant_signal(1);
-    if(is_work_flag==true && signal.re_initial_falg==false)
+    if(is_work_flag==true && signal.re_initial_flag==false)
     {
       is_work_flag=false;
-      Set_AMR_Period(2240);  //调整采样周期为1秒
+      Set_AMR_Period(1120);  //调整采样周期为1秒
+    //   Set_AMR_Period(2240);  //调整采样周期为1秒
     }
     return 2; //等待激活
   }
-#endif
+//#endif
 
-  if(is_work_flag==false)
+  if(is_work_flag==false)  
   {
-    if(signal.re_initial_falg==true)
+    if(signal.re_initial_flag==true)
     {
       is_work_flag=true;
     }
     else
     {
-      return 2;
+      return 2; // after
     }
   }
+*/
 
 
-
+ 
   //激活后的前INIT_DEPLOYMENT_NUM个包丢掉，因为存在磁场扰动的可能性大
   //做一次mmc3316_reset,为初始化做准备
   //signal.initialize_flag==0 避免节点重启之后再次进入初始化
   //意外重启signal.initialize_flag==2
-  if(!signal.wait_flag && signal.initialize_flag==0)
+  if((!signal.wait_flag && signal.initialize_flag == 0) || (!signal.wait_flag && signal.re_initial_flag == true)) // at init process clear initial_flag
   {
     //强磁激活后，需要reset传感器
-    wait_and_reset();
-    return 3;//return 4; //等待磁场复位
+    re_value = wait_and_reset();
+   // return 3;
+    return re_value; // 4 等待磁场复位(需要移开强磁)  3, drop first 10 sample befor init
   }
   //set raw value
+  //if ( nb module if is idle)
+  //{
+ // check_constant_signal(2);// to check the qiangci, if it is qiangci mean that it is a activate operation
+  //}
+  
+  
+    // big mag check  
+  //check_constant_signal(1);
+  if(check_constant_signal(1))
+  { 
+    return 2; // big mag 
+  }
+  
   Set_Raw_Value();
 
   //Reset_After_Strong_Mag();
 
-#if ACTIVATE_RF_BY_AMR==1
-  if(signal.activate_rf==2 || signal.activate_rf==1) //激活RF 及 待磁场复位
-  {
+//#if ACTIVATE_RF_BY_AMR==1
+ // if(signal.activate_rf==2 || signal.activate_rf==1) //激活RF 及 待磁场复位
+// {
     //Set_AMR_Period(1120);  //调整采样周期为1秒
     //return (signal.activate_rf+1);
-    return signal.status; //return re_value;
-  }
-#endif
+  //  return signal.status; //return re_value;
+ // }
+//#endif
 
   //data filter with average smooth
   Raw_Data_Smooth();
 
   //激活后10~30个包是初始化阶段，节点保持不动，不能受到磁干扰
-  if(signal.initialize_flag==0)
+  if(signal.initialize_flag == 0)
   {
+     // if(signal.re_initial_flag == true && signal.wait_flag == false)
+    if(signal.re_initial_flag == true )
+    {
+      signal.re_initial_flag = false;
+      Re_Init_Algorithm(); // re init handle 
+      Get_Algorithm_Parameters(&algo); // get algo parmeters ...
+    }
     Init_process();
-    re_value=3; //4 represented the initialize phase
+    re_value=3; // 4 represented the initialize phase
   }
-#if WRITE_ALGO_FLASH==1
-  else if(signal.initialize_flag==2) //重启,参数恢复
-  {
-    nv_read(NV_ALGO_ADDR, (uint8_t*)&algo_para, sizeof(struct ALGO));//读flash
-    Set_Algorithm_Parameters(&algo_para,false);//利用flash中的值进行初始化
-    signal.initialize_flag=1;
-    re_value=signal.status;
-  }
-#endif
+//#if WRITE_ALGO_FLASH==1
+ // else if(signal.initialize_flag==2) //重启,参数恢复
+ // {
+ //   nv_read(NV_ALGO_ADDR, (uint8_t*)&algo_para, sizeof(struct ALGO));//读flash
+//    Set_Algorithm_Parameters(&algo_para,false);//利用flash中的值进行初始化
+//    signal.initialize_flag=1;
+ //   re_value=signal.status;
+//  }
+//#endif
   else
   {
     //check each of x, y, z is un-stable
@@ -520,7 +486,7 @@ uint8_t Parking_Algorithm(void)
     Adaptive_Sampling();
 
     //adaptive update base line
-    if(signal.adaptive_bs_wait_num>0)
+    if(signal.adaptive_bs_wait_num>0)  // set at IS_leaving, 100
     {
       Adaptive_base_line();
     }
@@ -542,7 +508,7 @@ uint8_t Parking_Algorithm(void)
 
     //在信号波动时不更新base_line
     //在不能确定无车状态下不更新base_line
-    if(signal.b_status==0 && signal.status==0 && signal.stable && !bs_lock_flag)
+    if(signal.b_status==0 && signal.status==0 && signal.stable && !bs_lock_flag) // no park,after signal stable and 50 times later
     {
       Base_Line_Smooth();
     }
@@ -665,7 +631,7 @@ void Fill_base_buf(bs_buf_t* bs_buf, int16_t current_value)
   uint8_t ins;
 
   ins = bs_buf->tail + 1;
-  if(ins >= BS_BUFFER_LEN)
+  if(ins >= BS_BUFFER_LEN) //6
     ins = 0;
   if(ins == bs_buf->head)
   {
@@ -729,16 +695,16 @@ void Update_base_line(cardet_axis_t * axis) //bs_buf_t* bs_buf, smooth_buf_t* sm
 
     axis->adaptive_base_line = bs_buf->average_value; //更新基线，需要重新写
 
-    Save_Algorithm_Parameters();
+ //   Save_Algorithm_Parameters();
   }
 }
 
-void Record_Long_Stable()
+void Record_Long_Stable() // excute after status change to 1
 {
   uint8_t i=0;
   if(signal.stable && signal.stable!=signal.latest_stable) //from unstable to stable
   {
-    signal.long_stable_num = LONG_STABLE+20;
+    signal.long_stable_num = LONG_STABLE+20; // 100
     if(!signal.compute_long_bs && !base_enter_change_is_all_zero())
     {
       for(i=0;i<DIV_NUM;i++)
@@ -812,24 +778,6 @@ void Fast_Arrival_Response(void)
     }
     a_below_count=0;
   }
-  /*
-  else if (a_status==0)
-  {
-    if(temp_status == 1)
-    {
-      a_below_count++;
-      if(a_below_count >= AVERAGE_BELOW)
-      {
-        temp_status=0;
-        Car_Leave_Functions(AVERAGE_LEAVE);
-#ifdef SIM
-        printf("leave %d, cI=3\n", 12);
-#endif
-      }
-    }
-    a_over_count=0;
-  }
-  */
 }
 
 
@@ -871,7 +819,7 @@ void Fast_Leaving_Response(void)
   if(a_status == 1)
   {
      a_over_count++;
-     if(a_over_count >= CAR_LEAVE_COUNT)
+     if(a_over_count >= CAR_LEAVE_COUNT) //5
      {
        //Car_Leaved_Init();
        Car_Leave_Functions(f_leaving_branch);
@@ -908,7 +856,7 @@ uint8_t Smooth_Base_Status(uint16_t a_thresh)
     t_value += abs(XYZ[i].short_smooth - XYZ[i].base_line);
     //t_value += abs(XYZ[i].smooth_value - XYZ[i].base_line);
   }
-  temp_status = Is_Below_Thresh(FAST_LEAVING_THRSH, ADAPTIVE_BS);
+  temp_status = Is_Below_Thresh(FAST_LEAVING_THRSH, ADAPTIVE_BS); // 35  12
   if(t_value>=a_thresh && temp_status!=1)
   {
     a_status=1;
@@ -1004,7 +952,7 @@ void Car_Arrival_Functions(uint8_t arrival_num)
     signal.status = 1;
     enter_leave_branch = arrival_num;
 
-    Save_Algorithm_Parameters();
+ //   Save_Algorithm_Parameters();
     //watchdog_reboot(); //测试重启
 #ifdef SIM
   printf("enter %d\n", arrival_num);
@@ -1034,8 +982,8 @@ void Car_Leave_Functions(uint8_t leave_num)
 {
   Car_Leaved_Init();
   enter_leave_branch = leave_num;
-  signal.adaptive_bs_wait_num=BS_WAIT_NUM;
-  Save_Algorithm_Parameters();
+  signal.adaptive_bs_wait_num=BS_WAIT_NUM; // 100
+//  Save_Algorithm_Parameters();
   if(bs_flag)
   {
     bs_flag=false;
@@ -1180,7 +1128,7 @@ uint8_t Is_Change_Sim(uint8_t ca, uint8_t cb)
 #elif WITH_HMC5983 || WITH_QMC5883
 //#warning "no support"
 #else
-#error "no support"
+//#error "no support"
 #endif
     }
   }
@@ -1512,7 +1460,7 @@ void XYZ_IS_Stable()
     {
       XYZ[i].unocc_count=0;
     }
-    if(XYZ[i].unocc_count>=LEAVING_COUNT) //SHORT_LEN
+    if(XYZ[i].unocc_count>=LEAVING_COUNT) //3 //SHORT_LEN
     {
       XYZ[i].axis_stable = true; //如果满足该条件将不做第二种检查
       XYZ[i].unocc_count=LEAVING_COUNT; //SHORT_LEN
@@ -1634,7 +1582,7 @@ void Signal_IS_Stable()
   if(signal.stable && bs_lock_flag)
   {
     bs_lock_count++;
-    if(bs_lock_count>=BS_LOCK_NUM)
+    if(bs_lock_count>=BS_LOCK_NUM) //50
     {
       bs_lock_flag=false;
       bs_lock_count=0;
@@ -1671,7 +1619,7 @@ void Statistic_Wave_Shape()
 {
   if(!signal.stable)
   {
-    Set_Hill_Valley();
+    Set_Hill_Valley(); // get hill and valley
   }
 
   //为重置is_thunder[]服务
@@ -1818,7 +1766,7 @@ void Set_After_Fluctuate()
   //波动后极值的设置
   Set_After_Hill();
 
-  //统计波峰波谷及幅度
+  //统计波峰波谷num及hill vellay幅度,and max hill_vellay 
   Calculate_Amplitude();
 
   //设置is_thunder[]
@@ -1880,15 +1828,15 @@ void Set_After_Hill()
     //  XYZ[i].hill_point ++;
     //}
 
-    if(abs(XYZ[i].smooth_value - XYZ[i].hill_valley[XYZ[i].hill_point-1]) > 10 && XYZ[i].hill_point < HILL_LENGTH)
+    if(abs(XYZ[i].smooth_value - XYZ[i].hill_valley[XYZ[i].hill_point-1]) > 10 && XYZ[i].hill_point < HILL_LENGTH) //20
     {
       XYZ[i].hill_valley[XYZ[i].hill_point] = XYZ[i].short_smooth; //XYZ[i].smooth_value;
       XYZ[i].hill_point++;
     }
 #if UP_HILLS==1
-    if(up_point < UPLOAD_LEN)
+    if(up_point < UPLOAD_LEN) //10
     {
-    wave.upload_hill[up_point][i]=XYZ[i].short_smooth; //XYZ[i].smooth_value;
+      wave.upload_hill[up_point][i]=XYZ[i].short_smooth; //XYZ[i].smooth_value;
     }
 #endif
   }
@@ -1918,7 +1866,7 @@ void Set_Hill_Valley()
   for(i=0;i<DIV_NUM;i++)
   {
     hill_point = XYZ[i].hill_point;
-    if(hill_point >= HILL_LENGTH)
+    if(hill_point >= HILL_LENGTH) //20
     {
       break;
     }
@@ -1926,19 +1874,19 @@ void Set_Hill_Valley()
     if (XYZ[i].raw_value > XYZ[i].hist_raw_value)
     {
       XYZ[i].big_num++;
-      if(XYZ[i].big_num >= NUM_THRESH) //斜率连续NUM_THRESH次>0
+      if(XYZ[i].big_num >= NUM_THRESH) //斜率连续NUM_THRESH次>0  //2
       {
         if(XYZ[i].little_num > 0)
         {
           if(XYZ[i].little_num >= NUM_THRESH) //之前已经出现过斜率连续NUM_THRESH次<0
           {
             hill_dis=abs(XYZ[i].temp_hill-XYZ[i].hill_valley[hill_point-1]);
-            if(hill_dis > SLOPE_THRESH) //极值点间距>slope_thresh
+            if(hill_dis > SLOPE_THRESH) //极值点间距>slope_thresh //15
             {
-            XYZ[i].hill_valley[hill_point] = XYZ[i].temp_hill; //那么是极小值点
-            XYZ[i].hill_point++;
+              XYZ[i].hill_valley[hill_point] = XYZ[i].temp_hill; //那么是极小值点
+              XYZ[i].hill_point++;
 #if UP_HILLS==1
-          Set_Upload_Data(1,i);
+              Set_Upload_Data(1,i);
 #endif
             }
           }
@@ -2024,7 +1972,7 @@ void Calculate_Amplitude()
       }
 
       slope = XYZ[i].hill_valley[j] - XYZ[i].hill_valley[j-1];
-      if(abs(slope) >= SLOPE_THRESH)
+      if(abs(slope) >= SLOPE_THRESH) //15
       {
         if(slope>0)
         {
@@ -2036,7 +1984,7 @@ void Calculate_Amplitude()
           temp_hill[k]=-1;
           k++;
         }
-        if(abs(slope) >= BIG_SLOPE_THRESH)
+        if(abs(slope) >= BIG_SLOPE_THRESH) // 30
           bk++;
       }
     }
@@ -2119,10 +2067,11 @@ void Set_Upload_Data(uint8_t branch, uint8_t index)
     case 3:
       //表示至少有三个峰值数据
       //才需要上传
-      if(up_point >= LEAST_HILL_COUNT)
+      if(up_point >= LEAST_HILL_COUNT) //3
       {
         up_hill_changed = 1;
-        up_delay_count = 9 + (random_rand() % 5);
+       // up_delay_count = 9 + (random_rand() % 5);
+        up_delay_count = 9 + 5;
         //call_upload_wave(&wave);
         //WriteUploadInfo();
       }
@@ -2156,7 +2105,7 @@ void delay_call_up()
       wave.judge_branch=enter_leave_branch;
       wave.status=signal.status;
 //      WriteUploadInfo();
-      Set_UP_HILLS(&wave);
+ //     Set_UP_HILLS(&wave);
       }
     }
   }
@@ -2174,9 +2123,9 @@ void delay_call_up()
 void Init_Upload_Struct()
 {
   uint8_t i=0,j=0;
-  for(i=0;i<UPLOAD_LEN;i++)
+  for(i=0;i<UPLOAD_LEN;i++) //10
   {
-    for(j=0;j<DIV_NUM;j++)
+    for(j=0;j<DIV_NUM;j++) //3
     {
       wave.upload_hill[i][j]=0;
     }
@@ -2215,7 +2164,7 @@ void IS_Parking()
     {
       current_thresh=signal.occ_little_threshold;
       enter_branch_num=2;
-      need_parking_count=CAR_ARRIVAL_COUNT;
+      need_parking_count=CAR_ARRIVAL_COUNT; //5
     }
     else
     {
@@ -2225,7 +2174,7 @@ void IS_Parking()
     }
   }
 
-  signal.b_status = Smooth_Base_Status(current_thresh);
+  signal.b_status = Smooth_Base_Status(current_thresh); // 
 
   if(signal.b_status ==1)
   {
@@ -2304,7 +2253,7 @@ void IS_Leaving()
     if(signal.fuse_status==1)
     {
       signal.below_count++;
-      if(signal.below_count >= CAR_LEAVE_COUNT)
+      if(signal.below_count >= CAR_LEAVE_COUNT) //5
       {
         Car_Leave_Functions(f_leaving_branch);
       }
@@ -2430,7 +2379,7 @@ void Check_Hill_Amplitude()
     max_min_value += XYZ[i].max_min_amplitute;
   }
 
-  if(hill_count >= OVER_THUNDER_COUNT && big_amplitute >= OVER_THUNDER_BIG && max_min_value >= MAX_MIN_THRESH)
+  if(hill_count >= OVER_THUNDER_COUNT && big_amplitute >= OVER_THUNDER_BIG && max_min_value >= MAX_MIN_THRESH) /// 6  3  180
   {
     //if(!signal.is_thunder[0] && signal.status==0)
     //在信号稳定前，车辆已经被快速检测方法，判定停泊
@@ -2471,7 +2420,7 @@ void Check_Hill_Amplitude()
 */
 void Reset_Is_Thunder()
 {
-  if(signal.thunder_count > RESET_THUNDER_COUNT)
+  if(signal.thunder_count > RESET_THUNDER_COUNT) //25
   {
     signal.thunder_count_flag = false;
     if(signal.status != 1)
@@ -2528,7 +2477,7 @@ static bool magnetic_change_match(uint8_t ca, uint8_t cb)
 
   for(i=0; i<3; i++)
   {
-    if(abs(a_array[i]) < ERROR_THRESH)
+    if(abs(a_array[i]) < ERROR_THRESH) //50
     {
       a_count++;
     }
@@ -2753,71 +2702,10 @@ bool Space_Status(uint16_t a_value, uint16_t b_value, uint8_t CURR_DOUBLE_THRSH,
 */
 void Set_Raw_Value(void)
 {
-  bool is_strong_mag=false;
-#if WITH_MMC3316
-  if(MMC3316[SENSOR_PORT].x > 6500 && MMC3316[SENSOR_PORT].x < 10000)
-  {
-    XYZ[0].raw_value = MMC3316[SENSOR_PORT].x-8000;  //以后这个8000需要计算出来
-  }
-
-  if(MMC3316[SENSOR_PORT].y > 6500 && MMC3316[SENSOR_PORT].y < 10000)
-  {
-    XYZ[1].raw_value = MMC3316[SENSOR_PORT].y-8000;
-  }
-
-  if(MMC3316[SENSOR_PORT].z > 6500 && MMC3316[SENSOR_PORT].z < 10000)
-  {
-    XYZ[2].raw_value = MMC3316[SENSOR_PORT].z-8000;
-  }
-  //XYZ[3].raw_value = MMC3316[1].x;
-  //XYZ[4].raw_value = MMC3316[1].y;
-  //XYZ[5].raw_value = MMC3316[1].z;
-
-#elif WITH_HMC5983 || WITH_QMC5883
-//#warning "no support"
-  is_strong_mag=Is_Strong_Magnetic();
-  if(!is_strong_mag)
-  {
-#if ACTIVATE_RF_BY_AMR==1
-    if(signal.activate_rf != 0) //激活RF后的10个包过滤掉
-    {
-#if AUTO_RE_INIT==1
-      //re_value=4; //待磁场复位
-      signal.rf_num_count++;
-      if(signal.rf_num_count >= DROP_NUM)
-      {
-        signal.rf_num_count=0;
-        re_value=0;//激活RF后将状态复位
-        signal.activate_rf=0;
-        Re_Init_Algorithm(); //激活RF后重新初始化算法
-      }
-#else
-      signal.activate_rf=0;
-#endif
-    }
-    else  //已经跳过激活后的10个包
-#endif
-    {
-      XYZ[0].raw_value=One_Sample.x;
-      XYZ[1].raw_value=One_Sample.y;
-      XYZ[2].raw_value=One_Sample.z;
-    }
-  }
-#if ACTIVATE_RF_BY_AMR==1
-  else
-  {
-    Set_AMR_Period(1120);  //遇到强磁调整采样周期为1秒
-    if(signal.activate_rf != 1)
-    {
-      signal.activate_rf=2;
-      check_constant_signal(2); //强磁激活射频
-    }
-  }
-#endif
-
-#else
-#error "no support"
-#endif
+  XYZ[0].raw_value=One_Sample.x;
+  XYZ[1].raw_value=One_Sample.y;
+  XYZ[2].raw_value=One_Sample.z;
+ // bool is_strong_mag=false;
 }
 
 // Smooth the raw signal
@@ -2841,38 +2729,44 @@ void Raw_Data_Smooth()
 }
 
 //强磁激活后，需要reset传感器
-void wait_and_reset()
+uint8_t wait_and_reset()
 {
-  bool is_strong_mag=false;
+ // bool is_strong_mag=false;
   signal.init_num_count++;
-  is_strong_mag=Is_Strong_Magnetic();
-  if(is_strong_mag)//强磁干扰还未离开，还不能进入初始化状态
+ // is_strong_mag=Is_Strong_Magnetic();
+  if(check_constant_signal(1))//强磁干扰还未离开，还不能进入初始化状态
   {
-    if(signal.re_initial_falg)
-    {
-      Re_Calibrate_Success(false); //反馈标定失败信息
-      signal.re_initial_falg=false;
-    }
     signal.init_num_count=0;
-  }
+    return EN_INIT_FAILL;
+   }
+   // if(signal.re_initial_flag)
+  //  {
+   //  Re_Calibrate_Success(false); //反馈标定失败信息
+   //   signal.re_initial_flag=false;
+   // }
+
+    // send warn msg to prompt that operation err: need to remove the qiangci
+  
 
   //call reset function before initialize baseline
-  if(signal.init_num_count == (INIT_DEPLOYMENT_NUM-3))
-  {
-#if WITH_MMC3316
-    MMC3316_Reset(SENSOR_PORT);
-#elif WITH_HMC5983 || WITH_QMC5883
-    reset_flag=true; //自测，具有消磁作用
-#else
-#error "no support"
-#endif
-  }
+//  if(signal.init_num_count == (INIT_DEPLOYMENT_NUM-3)) //10
+//  {
+//#if WITH_MMC3316
+//    MMC3316_Reset(SENSOR_PORT);
+//#elif WITH_HMC5983 || WITH_QMC5883
+//    reset_flag=true; //自测，具有消磁作用
+//#else
+//#error "no support"
+//#endif
+//  }
 
   if(signal.init_num_count >=INIT_DEPLOYMENT_NUM)
   {
     signal.init_num_count=0;
     signal.wait_flag=true;
+
   }
+  return EN_INIT;
 }
 
 #if (IS_SNIFFER_VERSION==0) || (ACTIVATE_RF_BY_AMR==1)
@@ -2887,9 +2781,11 @@ void wait_and_reset()
 *
 * @return  none
 */
-void check_constant_signal(uint8_t activate_branch)
+//void check_constant_signal(uint8_t activate_branch)
+bool check_constant_signal(uint8_t activate_branch)
 {
-  bool is_strong_mag=false;
+  bool is_big_mag=false;
+  /*
 #if WITH_MMC3316
 
   big_value = abs(MMC3316[SENSOR_PORT].x -8000)+abs(MMC3316[SENSOR_PORT].y -8000)+abs(MMC3316[SENSOR_PORT].z -8000);
@@ -2900,40 +2796,32 @@ void check_constant_signal(uint8_t activate_branch)
   else
   {
     signal.num_count=0;
-  }
-#elif WITH_HMC5983 || WITH_QMC5883
-  is_strong_mag=Is_Strong_Magnetic();
-  if(is_strong_mag) //强磁干扰，需要测试一下。
+  }*/
+//#elif WITH_HMC5983 || WITH_QMC5883
+  is_big_mag=Is_Strong_Magnetic();
+  if(is_big_mag) //强磁干扰，需要测试一下。
   {
     signal.strong_num_count++;
+    if(signal.strong_num_count >= STRONG_MAG_NUM) //3
+    {
+      signal.weak_num_count=0;
+     // signal.is_strong_mag = true; // big mag
+     is_big_mag = true;
+    }
   }
   else
-  {
-    signal.strong_num_count=0;
+  {   
+    signal.weak_num_count++;
+    if(signal.weak_num_count >= WEAK_MAG_NUM)
+    {
+      signal.strong_num_count=0;
+     // signal.is_strong_mag = false;
+      is_big_mag = false;
+    }
   }
-#else
-#error "no support"
-#endif
+  return is_big_mag;
+}  
 
-  if(signal.strong_num_count>=3) //5
-  {
-    signal.strong_num_count=0;
-    if(activate_branch==1) //激活节点
-    {
-      signal.invoke_flag=true;
-      if (activated_cb)
-        activated_cb();
-    }
-#if ACTIVATE_RF_BY_AMR==1
-    else if (activate_branch==2) //激活射频,可能会多次调用
-    {
-      signal.activate_rf=1;
-      Activate_RF();
-      //re_value=5; //待磁场复位
-    }
-#endif
-  }
-}
 
 /*********************************************************************
 * @fn      Reset_After_Strong_Mag
@@ -2951,7 +2839,7 @@ void Reset_After_Strong_Mag()
   is_strong_mag=Is_Strong_Magnetic();
   if((signal.hist_is_strong_mag) && (!is_strong_mag))
   {
-    reset_flag=true;
+ //   reset_flag=true;
   }
 }
 
@@ -2986,6 +2874,7 @@ Set_Activated_Callback(void (*f)(void))
 *
 * @return  none
 */
+
 bool Is_Strong_Magnetic()
 {
   uint16_t big_value=0, big_x=0, big_y=0, big_z=0;
@@ -2993,14 +2882,32 @@ bool Is_Strong_Magnetic()
   big_y = abs(One_Sample.y);
   big_z = abs(One_Sample.z);
   big_value=big_x+big_y+big_z;
-  if((big_value>=STRONG_MAG_THRESH) || (big_x>=MAX_SIGNAL_MAG) || (big_y>=MAX_SIGNAL_MAG) || (big_z>=MAX_SIGNAL_MAG))
+  // if it's init or re_init the first two sample need to drop and then to check strong mag
+  if((!signal.wait_flag && signal.initialize_flag == 0) || (!signal.wait_flag && signal.re_initial_flag == true))
   {
-    return true;
+    if(signal.init_num_count > 2)
+    {
+      if((big_value>=STRONG_MAG_THRESH) || (big_x>=MAX_SIGNAL_MAG) || (big_y>=MAX_SIGNAL_MAG) || (big_z>=MAX_SIGNAL_MAG)) // 2500 1500
+      {
+        return true;
+      }
+      else
+      {
+        return false;
+      }
+    }
   }
-  else
-  {
-    return false;
+  else {
+      if((big_value>=STRONG_MAG_THRESH) || (big_x>=MAX_SIGNAL_MAG) || (big_y>=MAX_SIGNAL_MAG) || (big_z>=MAX_SIGNAL_MAG)) // 2500 1500
+      {
+        return true;
+      }
+      else
+      {
+        return false;
+      }
   }
+  return false;
 }
 
 /*********************************************************************
@@ -3039,7 +2946,7 @@ void Init_process()
 
   signal.init_num_count++;
 
-  if(signal.init_num_count >= INIT_THRESHOLD_NUM) //150
+  if(signal.init_num_count >= INIT_THRESHOLD_NUM) //30
   {
     for(i=0;i<DIV_NUM;i++)
     {
@@ -3058,13 +2965,14 @@ void Init_process()
 //      }
     }
 
-    Save_Algorithm_Parameters();
+ //   Save_Algorithm_Parameters();
     signal.init_num_count=0;
     signal.initialize_flag=1;
-    if(signal.re_initial_falg)
+    if(signal.re_initial_flag)
     {
-      Re_Calibrate_Success(true); //反馈标定成功信息
-      signal.re_initial_falg=false;
+      // at here need send msg to server to prompt re_init status
+//      Re_Calibrate_Success(true); //反馈标定成功信息 ...
+      signal.re_initial_flag=false;
     }
   }
 }
@@ -3086,8 +2994,8 @@ void Base_Line_Smooth()
 
   for(i=0;i<DIV_NUM;i++)
   {
-    a_value= SMOOTH_SUM - SMOOTH_PARAM;
-    if(abs(XYZ[i].delay_smooth) < NORMAL_MAX) // filter the thundering magnetic value
+    a_value= SMOOTH_SUM - SMOOTH_PARAM; //100 10
+    if(abs(XYZ[i].delay_smooth) < NORMAL_MAX) // filter the thundering magnetic value ,1200
     {
 
         //XYZ[i].base_line = Compute_Number(XYZ[i].base_line, XYZ[i].smooth_value, a_value, SMOOTH_PARAM);
@@ -3184,7 +3092,7 @@ void Raw_Signal_Smooth(cardet_axis_t* axis)
 //c_num 是参与运算的数；
 //a_num 是乘数
 //b_num 是除数
-int16_t Compute_Number(int16_t x1, int16_t x2, uint8_t a_num, uint8_t b_num)
+int16_t Compute_Number(int16_t x1, int16_t x2, uint8_t a_num, uint8_t b_num) //base_line delay_smooth, 90 ,10
 {
   int16_t t1=0, t2=0, t3=0, t4=0;;
   t1 = x1/100*a_num + x2/100*b_num;

@@ -56,7 +56,7 @@ static volatile clock_time_t jiffies = 0;
 #define MAX_TICKS (~((clock_time_t)0) / 2)
 
    
-//
+//**
 ISR(TIMER1_A1, timera1)
 {
   if(TA1IV == 2) {
@@ -91,14 +91,14 @@ ISR(TIMER1_A1, timera1)
       dt -= TA1R;
     } while(dt > INTERVAL);
 
- //   if(etimer_pending() && (etimer_next_expiration_time() - jiffies - 1) > MAX_TICKS) {
- //     etimer_request_poll();
-  //    LPM4_EXIT;
- //   }
+    if(etimer_pending() && (etimer_next_expiration_time() - jiffies - 1) > MAX_TICKS) {
+      etimer_request_poll();
+      LPM4_EXIT;
+   }
   }
 }
 
-//
+//**
 clock_time_t
 clock_time(void)
 {
@@ -110,7 +110,7 @@ clock_time(void)
   return t1;
 }
 
-//
+//**
 void
 clock_set(clock_time_t clock, clock_time_t fclock)
 {
@@ -119,7 +119,7 @@ clock_set(clock_time_t clock, clock_time_t fclock)
   jiffies = clock;
 }
 
-//
+//**
 void
 clock_init(void)
 {
@@ -140,7 +140,7 @@ clock_init(void)
 }
 
 
-//
+//**
 unsigned long
 clock_seconds(void)
 {
@@ -152,11 +152,23 @@ clock_seconds(void)
   return t1;
 }
 
-//
+//**
 rtimer_clock_t
 clock_counter(void)
 {
   return TA1R;
+}
+
+
+//**
+rtimer_clock_t rtimer_arch_now(void)
+{
+  rtimer_clock_t t1, t2;
+  do {
+    t1 = TA1R;
+    t2 = TA1R;
+  } while(t1 != t2);
+  return t1;
 }
 
 

@@ -1,5 +1,6 @@
-#include "qmc5883.h"
 #include "platform-conf.h"
+#include "qmc5883.h"
+
 
 /* register addr */
 #define REG_DATA_XL  0x00
@@ -61,17 +62,14 @@ static uint8_t qmc5883_temp[2] = {0};
 static uint8_t qmc5883_is_on = 0;
 static uint8_t qmc5883_pend = 0;
 static qmc5883_callback_t qmc5883_cb;
+#define I2C_WAIT  0X3000   //12288  //
+uint16_t idelay = I2C_WAIT;
 
-#if USE_CTIMER
-static struct ctimer qmc5883_ct;
-#endif
+#define BUSYWAIT_UNTIL(cond, max_time) do{ \
+  idelay = max_time; \
+  while(!(cond) && --idelay); \
+}while(0)
 
-#define I2C_WAIT (RTIMER_SECOND >> 8) // ~4ms //32768>>8  =128
-#define BUSYWAIT_UNTIL(cond, max_time) do { \
-  rtimer_clock_t t0; \
-  t0 = RTIMER_NOW(); \
-  while(!(cond) && RTIMER_CLOCK_LT(RTIMER_NOW(), t0 + (max_time))) { } \
-} while(0)
 /*------------------------------------------------------------------*/
 void qmc5883_read(int16_t *x, int16_t *y, int16_t *z, int16_t *t);
 void qmc5883_standby(void);
@@ -259,17 +257,14 @@ int qmc5883_read_regs(uint8_t reg, uint8_t len, uint8_t *buf)
 #endif
 }
 
-/*------------------------------------------------------------------*/
-// -----------------------
-//  QMC5883  MSP430F5438a
-// -----------------------
-//  SCL      P10.1
-//  SDA      P10.2
-//  CS       Px.x
-//  DRDY     P2.4
-// -----------------------
-void
-qmc5883_arch_init(void)
+
+/*================================================================
+【名 称】void qmc5883_arch_init(void)
+【功 能】I2C初始化
+【备 注】MSP430F5310 SCL P4.1 SDA P4.2 DRDY P2.0 
+================================================================*/
+
+void qmc5883_arch_init(void)
 {
   qmc5883_arch_on();
 }

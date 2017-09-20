@@ -1,7 +1,8 @@
+#include "contiki.h"
 #include "qmc5883.h"
-#include "platform-conf.h"
+#include "isr_compat.h"
+#include <string.h>
 
-/* register addr */
 #define REG_DATA_XL  0x00
 #define REG_DATA_XH  0x01
 #define REG_DATA_YL  0x02
@@ -51,9 +52,6 @@
 #error "QMC5883_RANGE must defined to be 2 or 8"
 #endif
 
-
-
-
 static uint8_t qmc5883_reg = 0;
 static uint8_t qmc5883_XYZ[6] = {0};
 static uint8_t qmc5883_temp[2] = {0};
@@ -66,7 +64,7 @@ static qmc5883_callback_t qmc5883_cb;
 static struct ctimer qmc5883_ct;
 #endif
 
-#define I2C_WAIT (RTIMER_SECOND >> 8) // ~4ms //32768>>8  =128
+#define I2C_WAIT (RTIMER_SECOND >> 8) // ~4ms
 #define BUSYWAIT_UNTIL(cond, max_time) do { \
   rtimer_clock_t t0; \
   t0 = RTIMER_NOW(); \
@@ -88,24 +86,20 @@ int qmc5883_arch_read(uint8_t reg, uint8_t len, uint8_t *buf);
 int qmc5883_arch_write(uint8_t *buf, uint8_t len);
 
 /*------------------------------------------------------------------*/
-
-int qmc5883_init(void)
+int
+qmc5883_init(void)
 {
   uint8_t *reg = &qmc5883_reg;
   static uint8_t fail = 0;
 
   qmc5883_arch_init();
-  
 
-  
   qmc5883_write_reg(REG_CTRL, 0x80);
   *reg = qmc5883_read_reg(REG_MODE);
-
   do {
     qmc5883_write_reg(REG_MODE, QMC5883_MODE);
     *reg = qmc5883_read_reg(REG_MODE);
   } while((*reg != QMC5883_MODE) && (++fail < 4));
-  
   if (*reg != QMC5883_MODE) {
     return 1;
   }
@@ -122,23 +116,27 @@ int qmc5883_init(void)
   return 0;
 }
 
-void qmc5883_set_callback(qmc5883_callback_t callback)
+void
+qmc5883_set_callback(qmc5883_callback_t callback)
 {
   qmc5883_cb = callback;
 }
 
-void qmc5883_self_test(void)
+void
+qmc5883_self_test(void)
 {
 }
 
-void qmc5883_sample_read(uint8_t gain)
+void
+qmc5883_sample_read(uint8_t gain)
 {
   qmc5883_sample();
-//#if !USE_ISR
-#if USE_CTIMER //0
+#if !USE_ISR
+#if USE_CTIMER
   ctimer_set(&qmc5883_ct, (CLOCK_SECOND>>7), qmc5883_interrupt, NULL);
 #else
   qmc5883_interrupt(NULL);
+#endif
 #endif
 }
 
@@ -148,7 +146,8 @@ int qmc5883_get_temperature(void)
 }
 
 /*------------------------------------------------------------------*/
-void qmc5883_sample(void)
+void
+qmc5883_sample(void)
 {
 #if QMC5883_LPM
   if (qmc5883_is_on == 0)
@@ -156,8 +155,8 @@ void qmc5883_sample(void)
 #endif
 
 #if QMC5883_NEW
-  qmc5883_write_reg(0x09, 0x1D);//00011101
-  qmc5883_write_reg(0x09, 0x1C);//00011100
+  qmc5883_write_reg(0x09, 0x1D);
+  qmc5883_write_reg(0x09, 0x1C);
 #else
   //qmc5883_write_reg(REG_CTRL, 0x80);
   qmc5883_write_reg(REG_SET_RES, 0x01);
@@ -177,7 +176,7 @@ void qmc5883_sample(void)
 void
 qmc5883_read(int16_t *x, int16_t *y, int16_t *z, int16_t *t)
 {
-  uint8_t buf[9] = {0} ;
+  uint8_t buf[9];
 
   qmc5883_read_regs(REG_DATA_XL, 9, buf);
 
@@ -194,7 +193,8 @@ qmc5883_standby(void)
   qmc5883_arch_off();
 }
 
-void qmc5883_interrupt(void *ptr)
+void
+qmc5883_interrupt(void *ptr)
 {
   int16_t xx, yy, zz, tt;
   uint8_t *xyz = qmc5883_XYZ;
@@ -229,9 +229,9 @@ void qmc5883_interrupt(void *ptr)
   }
 }
 
-
 /*------------------------------------------------------------------*/
-int qmc5883_write_reg(uint8_t reg, uint8_t val)
+int
+qmc5883_write_reg(uint8_t reg, uint8_t val)
 {
   uint8_t buf[2];
   buf[0] = reg;
@@ -239,7 +239,8 @@ int qmc5883_write_reg(uint8_t reg, uint8_t val)
   return qmc5883_arch_write(buf, 2);
 }
 
-uint8_t qmc5883_read_reg(uint8_t reg)
+uint8_t
+qmc5883_read_reg(uint8_t reg)
 {
   uint8_t buf[1];
   int r = 0;
@@ -247,7 +248,8 @@ uint8_t qmc5883_read_reg(uint8_t reg)
   return (r == 0 ? buf[0] : 0xFF);
 }
 
-int qmc5883_read_regs(uint8_t reg, uint8_t len, uint8_t *buf)
+int
+qmc5883_read_regs(uint8_t reg, uint8_t len, uint8_t *buf)
 {
 #if 1
   return qmc5883_arch_read(reg, len, buf);
@@ -274,139 +276,114 @@ qmc5883_arch_init(void)
   qmc5883_arch_on();
 }
 
-
-void qmc5883_arch_on(void)
+void
+qmc5883_arch_on(void)
 {
-  P4SEL |= BIT1+BIT2;
-  
-  UCB1CTL1 |= UCSWRST;
-  UCB1CTL0 |= UCMODE_3+UCMST ;
-  UCB1CTL0 |= UCSYNC;
-  UCB1CTL1 |= UCSSEL__SMCLK+UCSWRST;
-  UCB1BR0 = 4;
-  UCB1BR1 = 0x00;
-  UCB1I2CSA = 0x0D;
+  // P10.1-10.2: SDA/SCL
+  P10SEL   |=  (BIT1 + BIT2);
+  P10DIR   &= ~(BIT1 + BIT2);
 
-  UCB1CTL1 &= ~UCSWRST;
-  
+  UCB3CTL1 |= UCSWRST;
+  UCB3CTL0 |= UCMODE_3 + UCMST + UCSYNC;
+  UCB3CTL1 |= UCSSEL__SMCLK + UCSWRST;
+  UCB3BR0   = 80;
+  UCB3BR1   = 0x00;
+  UCB3I2CSA = 0x0D;
+  UCB3CTL1 &= ~UCSWRST;
+
 #if USE_ISR
-  P2SEL &= ~BIT0;
-  P2DIR &= ~BIT0;
-  P2IES &= ~BIT0; // rising edge
-  P2IFG &= ~BIT0;
-  P2IE  |=  BIT0;
+  P2SEL &= ~BIT4;
+  P2DIR &= ~BIT4;
+  P2IES &= ~BIT4; // rising edge
+  P2IFG &= ~BIT4;
+  P2IE  |=  BIT4;
 #endif
 
   qmc5883_is_on = 1;
-  
 }
 
-
-void qmc5883_arch_off(void)
+void
+qmc5883_arch_off(void)
 {
-  P4SEL &= ~(BIT1 + BIT2);
+  // P10.1-10.2: SDA/SCL
+  P10SEL &= ~(BIT1 + BIT2);
+  P10DIR &= ~(BIT1 + BIT2);
+  P10REN |=  (BIT1 + BIT2);
+  P10OUT |=  (BIT1 + BIT2);
 
   qmc5883_is_on = 0;
 }
-  
 
-
-
-int qmc5883_arch_read(uint8_t reg, uint8_t len, uint8_t *buf)
-
+int
+qmc5883_arch_read(uint8_t reg, uint8_t len, uint8_t *buf)
 {
   uint8_t idx = 0;
   uint8_t end = 0xFF; // DO NOT remove
   int r = 0;
 
-  UCB1CTL1 |= UCTR;
-  UCB1CTL1 |= UCTXSTT;
+  UCB3CTL1 |= UCTR;
+  UCB3CTL1 |= UCTXSTT;
 
-  UCB1TXBUF = reg;
-  BUSYWAIT_UNTIL((r = (UCB1IFG & UCTXIFG)), I2C_WAIT);
+  UCB3TXBUF = reg;
+  BUSYWAIT_UNTIL((r = (UCB3IFG & UCTXIFG)), I2C_WAIT);
   if (r == 0)
     return 1;
-  
-  UCB1CTL1 &= ~UCTR;
-  UCB1CTL1 |= UCTXSTT;
-  BUSYWAIT_UNTIL((r = !(UCB1CTL1 & UCTXSTT)),I2C_WAIT);
+
+  UCB3CTL1 &= ~UCTR;
+  UCB3CTL1 |= UCTXSTT;
+  BUSYWAIT_UNTIL((r = !(UCB3CTL1 & UCTXSTT)), I2C_WAIT);
   if (r == 0)
     return 2;
-         
+
   idx = 0;
   while(len) {
-    BUSYWAIT_UNTIL((r = UCB1IFG & UCRXIFG),I2C_WAIT);    
+    BUSYWAIT_UNTIL((r = (UCB3IFG & UCRXIFG)), I2C_WAIT);
     if (r == 0)
       return 3;
-      
     if (len == 1) {
-      UCB1CTL1 |= UCTXSTP;
+      UCB3CTL1 |= UCTXSTP;
     }
-    buf[idx++] = UCB1RXBUF;
+    buf[idx++] = UCB3RXBUF;
     len--;
-    UCB1IFG &= ~UCRXIFG;
+    UCB3IFG &= ~UCRXIFG;
   }
 
-  BUSYWAIT_UNTIL((r = !(UCB1CTL1&UCTXSTP)),I2C_WAIT);
+  BUSYWAIT_UNTIL((r = !(UCB3CTL1 & UCTXSTP)), I2C_WAIT);
   if (r == 0)
     return 4;
-
-  BUSYWAIT_UNTIL((r = (UCB1IFG & UCRXIFG)),I2C_WAIT);
+  BUSYWAIT_UNTIL((r = (UCB3IFG & UCRXIFG)), I2C_WAIT);
   if (r == 0)
     return 5;
-    
-  end = UCB1RXBUF;
-  
+  end = UCB3RXBUF; // DO NOT remove this line
+
   return 0;
 }
 
-//  After STT is clear, must check whether UCNACKIFG has been set
-//  In this case you should send a stop condition and bail out
-  
-//u8 r =0;
-
-int qmc5883_arch_write(uint8_t *buf, uint8_t len)
+int
+qmc5883_arch_write(uint8_t *buf, uint8_t len)
 {
   int r = 0;
 
-  UCB1CTL1 |= UCTXSTT+UCTR;
+  UCB3CTL1 |= UCTXSTT+UCTR;
 
-  while(len){
-  UCB1TXBUF=*buf++;
-  len--;
-  BUSYWAIT_UNTIL((r = UCB1IFG&UCTXIFG),I2C_WAIT);
-  if (r == 0)
-    return 1;
-  }  
-  
-  UCB1CTL1|=UCTXSTP;
-  BUSYWAIT_UNTIL((r = UCB1IFG&UCTXIFG),I2C_WAIT);
+  while(len) {
+    UCB3TXBUF = *buf++;
+    len--;
+    BUSYWAIT_UNTIL((r = (UCB3IFG & UCTXIFG)), I2C_WAIT);
     if (r == 0)
+      return 1;
+  }
+
+  UCB3CTL1 |= UCTXSTP;
+  BUSYWAIT_UNTIL((r = !(UCB3CTL1 & UCTXSTP)), I2C_WAIT);
+  if (r == 0)
     return 2;
-    
+
   return 0;
 }
 
-/*
-
-
-不同I2C slave，有不同的command gap time的，datasheet 里应该会有这些。
-
-做Start / Stop 的时候要加些延时进去就OK了。
-
-另外while的时候加个timeout机制啊，超时报错，增加些健壮性，。
-
-while (UCB0CTL1 & UCTXSTP && timeout){
-
-timeout--;
-
-}
-
-
-*/
 #if USE_ISR
-#pragma vector = USCI_B1_VECTOR
-__interrupt void USCI_B1_ISR(void)
+ISR(PORT2, port2_interrupt)
 {
   P2IFG &= ~BIT4;
   qmc5883_interrupt(NULL);

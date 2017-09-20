@@ -21,7 +21,8 @@
 #define INTERVAL  ACLK/CLOCK_CONF_SECOND
 #define BAUD2UBR(baud) ((F_CPU/baud))
 
-typedef unsigned long clock_time_t;
+#define JIFFIES_NUM(x)  (x)*CLOCK_CONF_SECOND/1000
+typedef unsigned short rtimer_clock_t;
 
 
 

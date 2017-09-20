@@ -412,6 +412,9 @@
                     <state>$PROJ_DIR$\..\..\contiki\</state>
                     <state>$PROJ_DIR$\..\..\contiki\core\</state>
                     <state>$PROJ_DIR$\..\..\dev</state>
+                    <state>$PROJ_DIR$\..\..\dev\bc95</state>
+                    <state>$PROJ_DIR$\..\..\dev\m25pe</state>
+                    <state>$PROJ_DIR$\..\..\dev\qmc5883</state>
                     <state>$PROJ_DIR$\..\..\platform\f5310\</state>
                 </option>
                 <option>
@@ -693,7 +696,7 @@
                 </option>
                 <option>
                     <name>OutputFile</name>
-                    <state></state>
+                    <state>$FILE_BNAME$.r43</state>
                 </option>
                 <option>
                     <name>AMultibyteSupport</name>
@@ -2323,9 +2326,6 @@
                     <name>$PROJ_DIR$\nb_device\app.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\nb_device\device.c</name>
-                </file>
-                <file>
                     <name>$PROJ_DIR$\nb_device\project-conf.h</name>
                 </file>
                 <file>
@@ -2470,6 +2470,12 @@
         </group>
         <group>
             <name>qmc5883</name>
+            <file>
+                <name>$PROJ_DIR$\..\..\dev\qmc5883\qmc5883.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\dev\qmc5883\qmc5883.h</name>
+            </file>
         </group>
     </group>
     <group>
@@ -2493,6 +2499,18 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\platform\f5310\platform-conf.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\uart0.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\uart0.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\uart1.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\uart1.h</name>
             </file>
         </group>
     </group>

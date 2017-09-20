@@ -31,6 +31,8 @@
 
 #include "contiki.h"
 #include "platform-conf.h"
+#include "app.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -60,25 +62,29 @@
 int
 main(int argc, char **argv)
 {
-  /*
-   * Initalize hardware.
-   */
+  
+  //Initalize hardware.
   msp430_cpu_init(F_CPU);
   clock_init();
 
  // leds_init();
  // leds_on(LEDS_RED);
-
-  //uart_init(BAUD2UBR(115200)); /* Must come before first printf */
-  //uart_send("booted\n", 7);
-
+  uart1_init(BAUD2UBR(9600)); //Must come before first printf 
   //leds_on(LEDS_GREEN);
   /* xmem_init(); */
-
 //  rtimer_init();
-   /*
-   * Initialize Contiki and our processes.
-   */
+
+  qmc5883_init();
+  qmc5883_set_callback(app_get_magdata);
+  Variant_Init();
+  while(1)
+  {
+    
+  
+  }
+  
+  /*
+  //Initialize Contiki and our processes.
   process_init();
   process_start(&etimer_process, NULL);
  // process_start(&sensors_process, NULL);
@@ -86,15 +92,18 @@ main(int argc, char **argv)
   process_start(&unixtime_process, NULL);
 #endif
   ctimer_init();
+  //
+  process_start(&NB_Device, NULL);
+  
   while(1) {
     int r;
     do {
-      /* Reset watchdog. */
+      // Reset watchdog.
 //      watchdog_periodic();
-      NODESTATS_ADD(proc);
       r = process_run();
     } while(r > 0);
   }
+*/
 
 }
 

@@ -81,6 +81,8 @@
 #define CLOCK_SECOND (clock_time_t)32
 #endif
 
+#define RTIMER_NOW() rtimer_arch_now() //...
+   
 /**
  * Initialize the clock library.
  *

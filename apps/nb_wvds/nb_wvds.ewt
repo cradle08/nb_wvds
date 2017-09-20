@@ -2116,9 +2116,6 @@
                     <name>$PROJ_DIR$\nb_device\app.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\nb_device\device.c</name>
-                </file>
-                <file>
                     <name>$PROJ_DIR$\nb_device\project-conf.h</name>
                 </file>
                 <file>
@@ -2263,6 +2260,12 @@
         </group>
         <group>
             <name>qmc5883</name>
+            <file>
+                <name>$PROJ_DIR$\..\..\dev\qmc5883\qmc5883.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\dev\qmc5883\qmc5883.h</name>
+            </file>
         </group>
     </group>
     <group>
@@ -2286,6 +2289,18 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\platform\f5310\platform-conf.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\uart0.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\uart0.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\uart1.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\uart1.h</name>
             </file>
         </group>
     </group>
