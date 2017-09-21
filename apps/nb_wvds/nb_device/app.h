@@ -33,7 +33,6 @@ struct ALGO {
 
 //
 void app_init();
-void app_send_msg();
 void app_get_magdata(unsigned char *data, unsigned char *temp);
 
 

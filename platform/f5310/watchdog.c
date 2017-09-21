@@ -31,17 +31,18 @@
  * @(#)$Id: watchdog.c,v 1.12 2010/11/12 15:54:41 nifi Exp $
  */
 
-#include "contiki-conf.h"
-#include "dev/watchdog.h"
+#include "contiki.h"
+#include "platform-conf.h"
+#include "watchdog.h"
 #include "isr_compat.h"
 
-#if WITH_TASKMON
-#include "sys/taskmon.h"
-#endif /* WITH_TASKMON */
+//#if WITH_TASKMON
+//#include "sys/taskmon.h"
+//#endif /* WITH_TASKMON */
 
 static int counter = 0;
 
-#define PRINT_STACK_ON_REBOOT 0
+//#define PRINT_STACK_ON_REBOOT 0
 
 /*---------------------------------------------------------------------------*/
 #if PRINT_STACK_ON_REBOOT

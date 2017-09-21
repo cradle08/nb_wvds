@@ -40,7 +40,7 @@
 #ifndef __ENERGEST_H__
 #define __ENERGEST_H__
 
-#include "sys/rtimer.h"
+//#include "sys/rtimer.h"
 
 typedef struct {
   /*  unsigned long cumulative[2];*/

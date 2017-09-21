@@ -6,13 +6,17 @@
 #include "vehicleDetection.h"
 #include "qmc5883.h"
 
+struct Sample_Struct One_Sample; // zyx mag data
+struct ALGO algo;  // algorithm parameters
+
+/*
 PROCESS(NB_Device, "NBDEV");
 AUTOSTART_PROCESSES(&NB_Device);
 
 
 
-struct Sample_Struct One_Sample; // zyx mag data
-struct ALGO algo;  // algorithm parameters
+//struct Sample_Struct One_Sample; // zyx mag data
+//struct ALGO algo;  // algorithm parameters
 static process_event_t xyz_ready_event; // read mag data event
 static struct ctimer hb_ct;  // heart beat ctimer
 static struct ctimer evt_ct; // park event ctimer
@@ -45,18 +49,6 @@ void app_get_magdata(unsigned char *data, unsigned char *temp)
   //temperature= ((temp[0]<<8)+temp[1])/128+25;
   process_post(&NB_Device, xyz_ready_event, NULL);
 }
-
-//**
-void app_send_msg()
-{
-  static uint32_t seq;
-  uint8_t buf[40] = {0};
-//  if(seq >= 9999) seq = 1;
-  sprintf(buf, "No=%d: x=%d,y=%d,z=%d,ps=%d", seq++, One_Sample.x, One_Sample.y, One_Sample.z, park_s);
-  uart1_Tx(40, buf);
-}
-
-
 
 //**
 PROCESS_THREAD(NB_Device , ev, data)
@@ -102,5 +94,5 @@ PROCESS_THREAD(NB_Device , ev, data)
   PROCESS_END();
 }
 
-
+*/
 

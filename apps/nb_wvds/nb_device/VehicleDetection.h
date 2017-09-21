@@ -598,6 +598,7 @@ void Re_Init_Request(); // re init algorithm ...
 int Set_Algorithm_Parameters(struct ALGO * paras);
 void Get_Algorithm_Parameters(struct ALGO * paras);
 void Variant_Init();
+uint8_t Parking_Algorithm(void);
 
 #define car_leave_change_is_all_zero() changes_is_all_zero(CAR_LEAVE)
 #define car_enter_change_is_all_zero() changes_is_all_zero(CAR_ENTER)

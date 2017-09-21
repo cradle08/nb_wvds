@@ -29,7 +29,7 @@ uart0_init(unsigned long baud)
   P4DIR &= ~BIT4;
   //
   UCA1CTL1 |= UCSWRST;
-  UCA1CTL1 |= UCSSEL_2;
+  UCA1CTL1 |= UCSSEL__SMCLK;
   UCA1BR0 = baud & 0xff;
   UCA1BR1 = UCBRS_3;
 

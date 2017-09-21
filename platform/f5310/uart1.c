@@ -23,19 +23,21 @@ static void uart1_pkt_rcvd(void *ptr);
 void
 uart1_init(unsigned long baud)
 {
-  // set as UCSI p4.5 X,p4.4 R
+  // set as UCSI p4.5 R, p4.4 T
   P4SEL |= 0x30;
-  P4DIR |= BIT5;
-  P4DIR &= ~BIT4;
+//  P4DIR |= BIT4;
+//  P4DIR &= ~BIT5;
   //hold peripheral in reset state
   UCA1CTL1 |= UCSWRST;
   // smclk
-  UCA1CTL1 |= UCSSEL_2;
+  UCA1CTL1 |= UCSSEL__SMCLK; //
   // set baud rate
   UCA1BR0 = baud & 0xff;
   UCA1BR1 = baud >> 8;
   // Modulation UCBRSx = 3 
-  UCA1MCTL = UCBRS_3;
+ // UCA0MCTL = UCBRS_1 | UCBRF_0;
+ // UCA1MCTL = UCBRS_1;
+  //UCA1MCTL = UCBRS_0 | UCBRF_13 | UCOS16;
   
   transmitting = 0;
   // clear r x flag
@@ -43,6 +45,7 @@ uart1_init(unsigned long baud)
   // Initialize USCI state machine **before** enabling interrupts
   UCA1CTL1 &= ~UCSWRST;
   UCA1IE |= UCRXIE;
+
 }
 
 //***
@@ -68,17 +71,7 @@ uart1_set_sent_callback(void (*f)(void))
   uart1_sent_callback = f;
 }
 
-//***
-void
-uart1_writeb(uint8_t c)
-{
-//  watchdog_periodic();
-  /* Loop until the transmission buffer is available. */
-  while((UCA1STAT & UCBUSY));
 
-  /* Transmit the data. */
-  UCA1TXBUF = c;
-}
 
 //*** For printf support
 /*
@@ -91,6 +84,18 @@ putchar(int c)
 }
 */
 
+//***
+void
+uart1_writeb(uint8_t c)
+{
+//  watchdog_periodic();
+  /* Loop until the transmission buffer is available. */
+  while((UCA1STAT & UCBUSY));
+    UCA1TXBUF = c;
+
+  /* Transmit the data. */
+
+}
 
 //***
 static void
@@ -109,7 +114,7 @@ uart1_send(uint8_t *data, uint16_t len)
     uart1_writeb(data[i]);
 //    uart3_writeb(data[i]);
   }
-  ctimer_set(&uart_st, (CLOCK_SECOND >> 7), uart1_sent_task, NULL);
+ // ctimer_set(&uart_st, (CLOCK_SECOND >> 7), uart1_sent_task, NULL);
   return 0;
 }
 
@@ -144,14 +149,15 @@ uart1_byte_rcvd(uint8_t c)
   return 1;
 }
 
+/*
 //***
 ISR(USCI_A1, uart1_rx_interrupt)
 {
   uint8_t c;
-  /*leds_toggle(LEDS_ALL);*/
+  //leds_toggle(LEDS_ALL);
   if(UCA1IV == 2) {
     if(UCA1STAT & UCRXERR) {
-      c = UCA1RXBUF;   /* Clear error flags by forcing a dummy read. */
+      c = UCA1RXBUF;   // Clear error flags by forcing a dummy read
     } else {
       c = UCA1RXBUF;
       if(uart1_input_handler != NULL) {
@@ -163,4 +169,5 @@ ISR(USCI_A1, uart1_rx_interrupt)
   }
 }
 
+*/
 

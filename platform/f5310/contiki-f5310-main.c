@@ -32,6 +32,10 @@
 #include "contiki.h"
 #include "platform-conf.h"
 #include "app.h"
+#include "qmc5883.h"
+#include "uart1.h"
+#include "vehicleDetection.h"
+
 
 #include <stdio.h>
 #include <string.h>
@@ -57,7 +61,30 @@
 #define PRINTF(...)
 #endif
 
+   
+extern struct Sample_Struct One_Sample;
+extern uint8_t park_s;
+static uint16_t seq = 0;
+static uint8_t  parking_s = 3;
 
+//**
+void app_send_msg()
+{
+  uint8_t buf[40] = {0};
+  if(seq >= 9999) seq = 1;
+  sprintf(buf, "No=%d: x=%d,y=%d,z=%d,ps=%d", seq++, One_Sample.x, One_Sample.y, One_Sample.z, parking_s);
+  //uart1_send(buf, 40);
+  uart1_send("12345", 5);
+}
+
+//** app init function
+void app_get_xyz(unsigned char *data, unsigned char *temp)
+{
+  One_Sample.x=(int16_t)((data[0]<<8) + data[1]);
+  One_Sample.y=(int16_t)((data[2]<<8) + data[3]);
+  One_Sample.z=(int16_t)((data[4]<<8) + data[5]);
+
+}   
 
 int
 main(int argc, char **argv)
@@ -75,12 +102,19 @@ main(int argc, char **argv)
 //  rtimer_init();
 
   qmc5883_init();
-  qmc5883_set_callback(app_get_magdata);
+  qmc5883_set_callback(app_get_xyz);
   Variant_Init();
+  uint16_t sample_period = 5;
   while(1)
   {
-    
-  
+    uint16_t i = 0;
+  //  qmc5883_sample_read(0);
+  //  parking_s = Parking_Algorithm();
+    app_send_msg();
+    for(i = 0; i < sample_period; i++)
+    {
+      __delay_cycles(8000);
+    }
   }
   
   /*

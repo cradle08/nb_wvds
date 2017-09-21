@@ -69,7 +69,7 @@
 #define __CLOCK_H__
 
 #include "contiki-conf.h"
-
+#include "platform-conf.h"
 /**
  * A second, measured in system clock time.
  *
@@ -82,7 +82,8 @@
 #endif
 
 #define RTIMER_NOW() rtimer_arch_now() //...
-   
+rtimer_clock_t rtimer_arch_now();
+
 /**
  * Initialize the clock library.
  *

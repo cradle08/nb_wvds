@@ -22,7 +22,10 @@
 #define BAUD2UBR(baud) ((F_CPU/baud))
 
 #define JIFFIES_NUM(x)  (x)*CLOCK_CONF_SECOND/1000
+//typedef unsigned short rtimer_clock_t;
+typedef unsigned long clock_time_t;
 typedef unsigned short rtimer_clock_t;
+#define RTIMER_CLOCK_LT(a,b)     ((signed short)((a)-(b)) < 0)
 
 
 

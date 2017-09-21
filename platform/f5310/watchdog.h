@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, Swedish Institute of Computer Science.
+ * Copyright (c) 2005, Swedish Institute of Computer Science
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,32 +28,15 @@
  *
  * This file is part of the Contiki operating system.
  *
- * Author: Adam Dunkels <adam@sics.se>
- *
  */
-#ifndef __CONTIKI_H__
-#define __CONTIKI_H__
+#ifndef __WATCHDOG_H__
+#define __WATCHDOG_H__
 
-//#include "contiki-version.h"
-//#include "contiki-conf.h"
-//#include "contiki-default-conf.h"
+void watchdog_init(void);
+void watchdog_start(void);
+void watchdog_periodic(void);
+void watchdog_stop(void);
 
-#include "sys/process.h"
-#include "sys/autostart.h"
-   
-#include "sys/clock.h"
-#include "sys/timer.h"
-#include "sys/ctimer.h"
-#include "sys/etimer.h"
-//#include "sys/rtimer.h"
+void watchdog_reboot(void);
 
-#include "sys/pt.h"
-
-//#include "sys/procinit.h"
-
-//#include "sys/loader.h"
-
-#include "watchdog.h"
-//#include "sys/energest.h"
-
-#endif /* __CONTIKI_H__ */
+#endif /* __WATCHDOG_H__ */
