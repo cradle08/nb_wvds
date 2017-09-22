@@ -73,8 +73,8 @@ void app_send_msg()
   uint8_t buf[40] = {0};
   if(seq >= 9999) seq = 1;
   sprintf(buf, "No=%d: x=%d,y=%d,z=%d,ps=%d", seq++, One_Sample.x, One_Sample.y, One_Sample.z, parking_s);
-  //uart1_send(buf, 40);
-  uart1_send("12345", 5);
+  uart1_send(buf, 40);
+ // uart1_send("12345", 5);
 }
 
 //** app init function
@@ -83,7 +83,6 @@ void app_get_xyz(unsigned char *data, unsigned char *temp)
   One_Sample.x=(int16_t)((data[0]<<8) + data[1]);
   One_Sample.y=(int16_t)((data[2]<<8) + data[3]);
   One_Sample.z=(int16_t)((data[4]<<8) + data[5]);
-
 }   
 
 int
@@ -108,8 +107,8 @@ main(int argc, char **argv)
   while(1)
   {
     uint16_t i = 0;
-  //  qmc5883_sample_read(0);
-  //  parking_s = Parking_Algorithm();
+    qmc5883_sample_read(0);
+    parking_s = Parking_Algorithm();
     app_send_msg();
     for(i = 0; i < sample_period; i++)
     {

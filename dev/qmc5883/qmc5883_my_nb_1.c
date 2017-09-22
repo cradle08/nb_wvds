@@ -1,9 +1,8 @@
-#include "contiki.h"
-#include "platform-conf.h"
+#include "system.h"
 #include "qmc5883.h"
-#include "isr_compat.h"
-#include <string.h>
 
+
+/* register addr */
 #define REG_DATA_XL  0x00
 #define REG_DATA_XH  0x01
 #define REG_DATA_YL  0x02
@@ -68,7 +67,7 @@ static qmc5883_callback_t qmc5883_cb;
 static struct ctimer qmc5883_ct;
 #endif
 
-#define I2C_WAIT 128 // ~4ms //32768>>8  =128
+#define I2C_WAIT (RTIMER_SECOND >> 8) // ~4ms //32768>>8  =128
 #define BUSYWAIT_UNTIL(cond, max_time) do { \
   rtimer_clock_t t0; \
   t0 = RTIMER_NOW(); \
@@ -136,12 +135,11 @@ void qmc5883_self_test(void)
 void qmc5883_sample_read(uint8_t gain)
 {
   qmc5883_sample();
-#if !USE_ISR
-#if USE_CTIMER
+//#if !USE_ISR
+#if USE_CTIMER //0
   ctimer_set(&qmc5883_ct, (CLOCK_SECOND>>7), qmc5883_interrupt, NULL);
 #else
   qmc5883_interrupt(NULL);
-#endif
 #endif
 }
 
@@ -280,14 +278,13 @@ qmc5883_arch_init(void)
 
 void qmc5883_arch_on(void)
 {
-  // p4.1,p4.2 SDA/SCL
   P4SEL |= BIT1+BIT2;
-  P4DIR &= ~(BIT1 + BIT2);
   
   UCB1CTL1 |= UCSWRST;
-  UCB1CTL0 |= UCMODE_3 + UCMST + UCSYNC;
+  UCB1CTL0 |= UCMODE_3+UCMST ;
+  UCB1CTL0 |= UCSYNC;
   UCB1CTL1 |= UCSSEL__SMCLK+UCSWRST;
-  UCB1BR0 = 80;
+  UCB1BR0 = 4;
   UCB1BR1 = 0x00;
   UCB1I2CSA = 0x0D;
 
@@ -308,11 +305,7 @@ void qmc5883_arch_on(void)
 
 void qmc5883_arch_off(void)
 {
-  // P4.1,p4.2 SDA/SCL
   P4SEL &= ~(BIT1 + BIT2);
-  P4DIR &= ~(BIT1 + BIT2);
-  P4REN |=  (BIT1 + BIT2);
-  P4OUT |=  (BIT1 + BIT2);
 
   qmc5883_is_on = 0;
 }
@@ -413,7 +406,8 @@ timeout--;
 
 */
 #if USE_ISR
-ISR(USCI_B1, USCI_B1_interrupt)
+#pragma vector = USCI_B1_VECTOR
+__interrupt void USCI_B1_ISR(void)
 {
   P2IFG &= ~BIT4;
   qmc5883_interrupt(NULL);
