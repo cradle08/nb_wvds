@@ -2291,12 +2291,6 @@
                 <name>$PROJ_DIR$\..\..\platform\f5310\platform-conf.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\platform\f5310\uart0.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\platform\f5310\uart0.h</name>
-            </file>
-            <file>
                 <name>$PROJ_DIR$\..\..\platform\f5310\uart1.c</name>
             </file>
             <file>

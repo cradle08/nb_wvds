@@ -86,8 +86,7 @@ static void port_mapping(void)
   
   
   
-  P4MAP7 = PM_MCLK;
-//  PMAPPWD = 0;                              // Disable Write-Access to modify port mapping registers
+  P4MAP7 = PM_MCLK;                            // Disable Write-Access to modify port mapping registers
   P1DIR |= BIT0;                            // ACLK set out to pins
   P1SEL |= BIT0;                            
   P2DIR |= BIT2;                            // SMCLK set out to pins
@@ -117,7 +116,7 @@ void msp430_dco_init(uint32_t sped)
 {
  
   dint();
-  uint16_t flln = (sped /32768) - 1; //243
+  uint16_t flln = (sped /32768) - 1; //243  (8M)
   // set p5.4 p5.5 as xtclk port
   P5SEL = 0x30;
   // use x1in x1out(LF) as clock source
@@ -128,7 +127,7 @@ void msp430_dco_init(uint32_t sped)
   UCSCTL0 = 0x0000;
   UCSCTL1 |= DCORSEL_4; // 
   UCSCTL2 |= FLLD_1 + flln;
-  UCSCTL3 |= SELREF__XT1CLK;
+ // UCSCTL3 |= SELREF__XT1CLK;
   __bic_SR_register(SCG0);
   
   // wait untill dco stable

@@ -9,7 +9,7 @@ static uint16_t uart_rxidx = 0;
 static volatile uint8_t transmitting;
 
 //static int (*uart1_input_handler)(uint8_t *data, uint16_t len);
-static int (*uart1_input_handler)(unsigned char c);
+static int (*uart1_input_handler)(int8_t c);
 static void (*uart1_sent_callback)(void);
 
 static struct ctimer uart_ct;
@@ -25,8 +25,8 @@ uart1_init(unsigned long baud)
 {
   // set as UCSI p4.5 R, p4.4 T
   P4SEL |= 0x30;
-//  P4DIR |= BIT4;
-//  P4DIR &= ~BIT5;
+  P4DIR |= BIT4;
+  P4DIR &= ~BIT5;
   //hold peripheral in reset state
   UCA1CTL1 |= UCSWRST;
   // smclk
@@ -46,6 +46,7 @@ uart1_init(unsigned long baud)
   UCA1CTL1 &= ~UCSWRST;
   UCA1IE |= UCRXIE;
 
+  
 }
 
 //***
@@ -59,7 +60,7 @@ uart1_active(void)
 
 //***
 void
-uart1_set_input(int (*input)(unsigned char c))
+uart1_set_input(int (*input)(int8_t c))
 {
   uart1_input_handler = input;
 }

@@ -40,16 +40,18 @@
 #include "lib/ringbuf.h"
 /*---------------------------------------------------------------------------*/
 void
-ringbuf_init(struct ringbuf *r, uint8_t *dataptr, uint8_t size)
+ringbuf_init(struct ringbuf *r, int8_t *dataptr, uint16_t size)
 {
   r->data = dataptr;
-  r->mask = size - 1;
-  r->put_ptr = 0;
-  r->get_ptr = 0;
+  r->flag = 0; //0: read or write, 1:only read, 2: only write
+  r->total_len = size - 1;
+  r->head = 0;
+  r->tail = 0;
+
 }
 /*---------------------------------------------------------------------------*/
-int
-ringbuf_put(struct ringbuf *r, uint8_t c)
+int8_t
+ringbuf_put(struct ringbuf *r, int8_t c)
 {
   /* Check if buffer is full. If it is full, return 0 to indicate that
      the element was not inserted into the buffer.
@@ -60,47 +62,47 @@ ringbuf_put(struct ringbuf *r, uint8_t c)
      be atomic. We use an uint8_t type, which makes access atomic on
      most platforms, but C does not guarantee this.
   */
-  if(((r->put_ptr - r->get_ptr) & r->mask) == r->mask) {
-    return 0;
+  uint16_t index = r->tail + 1;
+  if(index > r->total_len)
+  {
+    r->tail = 0;
   }
-  r->data[r->put_ptr] = c;
-  r->put_ptr = (r->put_ptr + 1) & r->mask;
-  return 1;
+  if(index == r->head)
+  {
+    r->flag = 1; //0: read or write, 1:only read, 2: only write
+    return -1; // buff is full
+  }       
+  r->data[index] = c;
 }
 /*---------------------------------------------------------------------------*/
-int
+int8_t
 ringbuf_get(struct ringbuf *r)
 {
   uint8_t c;
   
-  /* Check if there are bytes in the buffer. If so, we return the
-     first one and increase the pointer. If there are no bytes left, we
-     return -1.
-
-     XXX: there is a potential risk for a race condition here, because
-     the ->put_ptr field may be written concurrently by the
-     ringbuf_put() function. To avoid this, access to ->get_ptr must
-     be atomic. We use an uint8_t type, which makes access atomic on
-     most platforms, but C does not guarantee this.
-  */
-  if(((r->put_ptr - r->get_ptr) & r->mask) > 0) {
-    c = r->data[r->get_ptr];
-    r->get_ptr = (r->get_ptr + 1) & r->mask;
-    return c;
-  } else {
-    return -1;
+  uint16_t index = r->head + 1;
+  if(index > r->total_len)
+  {
+    r->head = 0;
   }
+  if(index  == r->tail)
+  {
+    r->flag = 2; //0: read or write, 1:only read, 2: only write
+    return -1; // buff is empty
+  }
+  return r->data[index];
 }
 /*---------------------------------------------------------------------------*/
-int
-ringbuf_size(struct ringbuf *r)
+int16_t ringbuf_size(struct ringbuf *r)
 {
-  return r->mask + 1;
+  return r->total_len + 1;
 }
-/*---------------------------------------------------------------------------*/
-int
-ringbuf_elements(struct ringbuf *r)
+//**---------------------------------------------------------------------------*/
+uint16_t ringbuf_elements(struct ringbuf *r)
 {
-  return (r->put_ptr - r->get_ptr) & r->mask;
+  if(r->head < r->tail)
+    return r->tail - r->head;
+  else
+    return r->tail + r->total_len - r->head;
 }
 /*---------------------------------------------------------------------------*/

@@ -282,7 +282,7 @@ void qmc5883_arch_on(void)
 {
   // p4.1,p4.2 SDA/SCL
   P4SEL |= BIT1+BIT2;
-  P4DIR &= ~(BIT1 + BIT2);
+  P4DIR &= ~(BIT1 + BIT2);//...
   
   UCB1CTL1 |= UCSWRST;
   UCB1CTL0 |= UCMODE_3 + UCMST + UCSYNC;

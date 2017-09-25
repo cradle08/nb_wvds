@@ -54,7 +54,7 @@ struct Msg_PlayData{
 };
 
 // msg tail
-sturct Msg_Tail{
+struct Msg_Tail{
   uint8_t crc[2];    // crc of type to data
   int8_t  endflag;   //FF
 };
@@ -65,6 +65,8 @@ struct MSG{
     struct Msg_PlayData msg_playdata;
     struct Msg_Tail msg_tail;
 };
+
+
 
 // enum recv stats
 enum{
@@ -88,16 +90,17 @@ enum{
 
 void app_init(); // app init func
 void app_get_magdata(unsigned char *data, unsigned char *temp); // get xyz mag data callback func
-void uart1_rxd_callback(int8_t c); // uart1 rxd interrupt handle callback function
-uint8_t add2recvbuf(); // add byte to recv msg  buffer
+int uart1_recv_callback(int8_t c); // uart1 rxd interrupt handle callback function
+int8_t add2recvbuf(); // add byte to recv msg  buffer
 void app_send_msg(uint8_t status); // app send msg func
 void app_send_parking_msg(); // app send parking msg
 void app_send_leaving_msg(); // app send leaving msg
 void app_send_strongmag_msg(); // app send strong mag msg
 
+void recv_init();
 
 
-PROCESS_NAME(NB_Device);
+
 #endif /* _APP_H */
 
 

@@ -1209,15 +1209,15 @@
                 </option>
                 <option>
                     <name>RTDescription</name>
-                    <state></state>
+                    <state>Use the normal configuration of the C/EC++ runtime library. No locale interface, C locale, no file descriptor support, no multibytes in printf and scanf, and no hex floats in strtod.</state>
                 </option>
                 <option>
                     <name>RTConfigPath</name>
-                    <state>xxx.h</state>
+                    <state>$TOOLKIT_DIR$\lib\dlib\dl430xlsfn.h</state>
                 </option>
                 <option>
                     <name>RTLibraryPath</name>
-                    <state>xxx.r43</state>
+                    <state>$TOOLKIT_DIR$\lib\dlib\dl430fn.r43</state>
                 </option>
                 <option>
                     <name>Input variant</name>
@@ -1226,7 +1226,7 @@
                 </option>
                 <option>
                     <name>Input description</name>
-                    <state></state>
+                    <state>Automatic choice of formatter.</state>
                 </option>
                 <option>
                     <name>Output variant</name>
@@ -1235,7 +1235,7 @@
                 </option>
                 <option>
                     <name>Output description</name>
-                    <state></state>
+                    <state>Automatic choice of formatter.</state>
                 </option>
                 <option>
                     <name>GRuntimeLibSelectSlave</name>
@@ -1256,7 +1256,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectMenu</name>
-                    <state></state>
+                    <state>MSP430F5310	MSP430F5310</state>
                 </option>
                 <option>
                     <name>GStackHeapOverride</name>
@@ -1264,11 +1264,11 @@
                 </option>
                 <option>
                     <name>GStackSize2</name>
-                    <state>###Uninitialized###</state>
+                    <state>80</state>
                 </option>
                 <option>
                     <name>GHeapSize2</name>
-                    <state>###Uninitialized###</state>
+                    <state>80</state>
                 </option>
                 <option>
                     <name>RadioDataModelType</name>
@@ -1276,7 +1276,7 @@
                 </option>
                 <option>
                     <name>GHeap20Size</name>
-                    <state>###Uninitialized###</state>
+                    <state>80</state>
                 </option>
                 <option>
                     <name>GeneralMisraRules98</name>
@@ -1383,7 +1383,7 @@
                 </option>
                 <option>
                     <name>Math description</name>
-                    <state></state>
+                    <state>Default variants of cos, sin, tan, log, log10, pow, and exp.</state>
                 </option>
                 <option>
                     <name>GESupportFrwp</name>
@@ -1525,7 +1525,7 @@
                 </option>
                 <option>
                     <name>OutputFile</name>
-                    <state></state>
+                    <state>$FILE_BNAME$.r43</state>
                 </option>
                 <option>
                     <name>CCLibConfigHeader</name>
@@ -1565,7 +1565,17 @@
                 </option>
                 <option>
                     <name>newCCIncludePaths</name>
-                    <state></state>
+                    <state>$PROJ_DIR$\nb_device</state>
+                    <state>$PROJ_DIR$\</state>
+                    <state>$PROJ_DIR$\..\aes</state>
+                    <state>$PROJ_DIR$\..\at-cmd</state>
+                    <state>$PROJ_DIR$\..\..\contiki\</state>
+                    <state>$PROJ_DIR$\..\..\contiki\core\</state>
+                    <state>$PROJ_DIR$\..\..\dev</state>
+                    <state>$PROJ_DIR$\..\..\dev\bc95</state>
+                    <state>$PROJ_DIR$\..\..\dev\m25pe</state>
+                    <state>$PROJ_DIR$\..\..\dev\qmc5883</state>
+                    <state>$PROJ_DIR$\..\..\platform\f5310\</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -1602,7 +1612,7 @@
                 </option>
                 <option>
                     <name>CCOptLevelSlave</name>
-                    <state>1</state>
+                    <state>3</state>
                 </option>
                 <option>
                     <name>CInput</name>
@@ -1917,7 +1927,7 @@
                 </option>
                 <option>
                     <name>OutputFile</name>
-                    <state></state>
+                    <state>nb_wvds.txt</state>
                 </option>
                 <option>
                     <name>OutputFormat</name>
@@ -2499,12 +2509,6 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\platform\f5310\platform-conf.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\platform\f5310\uart0.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\platform\f5310\uart0.h</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\platform\f5310\uart1.c</name>

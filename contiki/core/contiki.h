@@ -49,6 +49,7 @@
 
 #include "sys/pt.h"
 
+#include "lib/ringbuf.h"
 //#include "sys/procinit.h"
 
 //#include "sys/loader.h"

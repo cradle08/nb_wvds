@@ -9,11 +9,12 @@
 struct Sample_Struct One_Sample; // zyx mag data
 struct ALGO algo;  // algorithm parameters
 
-/*
+
 #define RECV_MSG_BUF_LEN 512
 #define SEND_MSG_BUF_LEN 256
 
 ///////
+PROCESS_NAME(NB_Device);
 PROCESS(NB_Device, "NBDEV");
 AUTOSTART_PROCESSES(&NB_Device);
 
@@ -21,7 +22,7 @@ AUTOSTART_PROCESSES(&NB_Device);
 
 //struct Sample_Struct One_Sample; // zyx mag data
 //struct ALGO algo;  // algorithm parameters
-static MSG msg; // msg struct
+static struct MSG msg; // msg struct
 static process_event_t xyz_ready_event; // read mag data event
 static process_event_t recv_msg_event; // recv a msg form nb
 static struct ctimer hb_ct;  // heart beat ctimer
@@ -30,6 +31,8 @@ static struct ctimer mag_ct; // mag change ctimer
 static struct etimer sa_et;  // sample timer
 static uint8_t park_s = 3;   // parking status
 static uint16_t sample_period = 0; // sample period 
+
+struct ringbuf RecvRingBuf;
 static uint16_t send_index = 0; // send msg context index
 static uint16_t recv_index = 0; // recv msg context index
 int8_t sendmsgbuf[SEND_MSG_BUF_LEN] = {0}; //  send msg buffer 
@@ -37,6 +40,7 @@ int8_t recvmsgbuf[RECV_MSG_BUF_LEN] = {0}; // recv msg buffer
 int8_t rt_index = 0; // recv temp buffer index
 #define RT_BUF_LEN 2 // recv temp buffer len
 int8_t rtbuf[RT_BUF_LEN] = {0}; // recv temp buffer
+uint8_t recv_status = 0;
 
 
 int8_t OctCharToHex[10] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09}; // 0=48,9=57
@@ -49,12 +53,16 @@ void app_init()
 {
   // init variable
   xyz_ready_event = process_alloc_event();
-  
+  recv_msg_event = process_alloc_event();
+
   // read *** form flash 
   
   // set read xyz magdata callback
   qmc5883_set_callback(app_get_magdata);
   // ready fault handle
+  // init recv buf ...
+  recv_init();
+  uart1_set_input(uart1_recv_callback); // set uart1 recv callback func when recv byte form nb module
  
 }
 
@@ -71,6 +79,8 @@ void app_get_magdata(unsigned char *data, unsigned char *temp)
 //** recv init operation
 void recv_init()
 {
+    // init recv ring buf
+    ringbuf_init(&RecvRingBuf, recvmsgbuf, RECV_MSG_BUF_LEN);
     memset(recvmsgbuf, 0, RECV_MSG_BUF_LEN);
     memset(rtbuf, 0, RT_BUF_LEN);
     recv_index = 0;
@@ -81,7 +91,7 @@ void recv_init()
 //** change char to hex and add to recv buffer 
 int8_t add2recvbuf()
 {
-  int8_t low, hig, i = 0;
+  int8_t ch, low, hig, i = 0;
   for(i = 0; i < RT_BUF_LEN; i++)
   {
     if(i == 0)
@@ -105,18 +115,31 @@ int8_t add2recvbuf()
       }
     }
   }
-  return recvmsgbuf[recv_index++] = ((hig << 8) | low);
-    
+  ch = ((hig << 8) | low);
+  return ringbuf_put(&RecvRingBuf, ch);
 }
 
+
 //** uart1 rxd interrupt handle callback function
-void uart1_rxd_callback(int8_t c)
+int uart1_recv_callback(int8_t c)
 {
+/*
+  rtbuf[rt_index++] = c;
+  //reset rt_index(recv temp index) everytime after change char to hex
+  if(rt_index >= 2) 
+  {
+    add2recvbuf();
+    rt_index = 0; 
+  }
+}
+// parse recv msg form
+uint8_t parse_recv_msg()
+{*/
   // change recv status at last three byte
-  if(msg.msglen == recv_index) 
+  if(msg.msg_head.msglen == recv_index) 
   {
     recv_status == RECV_CRC;
-  }else if{msg.msglen + 2 == recv_index){
+  } else if(msg.msg_head.msglen + 2 == recv_index){
   {
     recv_status == RECV_ENDFLAG;
   }
@@ -127,9 +150,9 @@ void uart1_rxd_callback(int8_t c)
     if(rt_index == RT_BUF_LEN)
     {
       add2recvbuf();
-      recv_status = READY_PLAYDATA;
+      recv_status = RECV_PLAYDATA;
     }
-  }else if(recv_status == RECV_STARTFLAG){ // start to recv start flag
+  } else if(recv_status == RECV_STARTFLAG){ // start to recv start flag
     if(c == 'A') 
     {
       rtbuf[rt_index++] = 'A';
@@ -141,21 +164,21 @@ void uart1_rxd_callback(int8_t c)
       // start flag error: init
       recv_init();
     }
-  }else if(recv_status == RECV_LEN){ // start to recv msg len
+  } else if(recv_status == RECV_LEN){ // start to recv msg len
     rtbuf[rt_index++] = c;
     if(rt_index == RT_BUF_LEN) // 2 recv right
     {
-      msg.msglen = (uint8_t)add2recvbuf();
-      recv_status = READY_PLAYDATA;
+     msg.msg_head.msglen = (uint8_t)add2recvbuf();
+      recv_status = RECV_PLAYDATA;
     }
-  }else if(recv_status == RECV_CRC){ // start to recv crc
+  } else if(recv_status == RECV_CRC){ // start to recv crc
     rtbuf[rt_index++] = c;
     if(rt_index == RT_BUF_LEN) // 2
     {
       add2recvbuf();
       recv_status = RECV_CRC;
     }
-  }else if(revc_status == RECV_ENDFLAG){
+  } else if(recv_status == RECV_ENDFLAG){
     if(c == 'F')
     {
       rt_index++;
@@ -172,24 +195,25 @@ void uart1_rxd_callback(int8_t c)
   
   //reset rt_index(recv temp index) everytime after change char to hex
   if(rt_index >= 2) rt_index = 0; 
+  }
 }
 
 //** app send parking msg
 void app_send_parking_msg() 
 {
-
+;
 }
 
 //** app send leaving msg
-void app_send_leaving_msg
-{
-
-}
+//void app_send_leaving_msg
+//{
+//
+//}
 
 //** app send strong mag msg
 void app_send_strongmag_msg()
 {
-  
+  ;
 }
 
 
@@ -198,11 +222,11 @@ void app_send_strongmag_msg()
 void app_send_msg(uint8_t status)
 {
   if(status == PARKING){ // send parking msg
-    app_send_parking_msg()
+    app_send_parking_msg();
   }else if(status == LEAVING){ // send leaving msg
-    app_send_leaving_msg
+    app_send_leaving_msg();
   }else if(status == STRONG_MAG){ // send strong mag msg
-    app_send_strongmag_msg()
+    app_send_strongmag_msg();
   }else if(status == INIT_MAG){ // device at init status
     //
   }
@@ -242,7 +266,7 @@ PROCESS_THREAD(NB_Device , ev, data)
         app_send_msg(park_status);
       }
       //
-    }else if(ev == recv_msg_event{ // had recv a msg form nb module
+    }else if(ev == recv_msg_event){ // had recv a msg form nb module
       //parse and handle this msg 
       
     }
@@ -252,6 +276,3 @@ PROCESS_THREAD(NB_Device , ev, data)
   }
   PROCESS_END();
 }
-
-*/
-

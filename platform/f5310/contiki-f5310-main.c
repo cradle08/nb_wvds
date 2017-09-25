@@ -68,7 +68,7 @@ static uint16_t seq = 0;
 static uint8_t  parking_s = 3;
 
 //**
-void app_send_msg()
+void app_test_send_msg()
 {
   uint8_t buf[40] = {0};
   if(seq >= 9999) seq = 1;
@@ -96,6 +96,7 @@ main(int argc, char **argv)
  // leds_init();
  // leds_on(LEDS_RED);
   uart1_init(BAUD2UBR(9600)); //Must come before first printf 
+
   //leds_on(LEDS_GREEN);
   /* xmem_init(); */
 //  rtimer_init();
@@ -109,7 +110,7 @@ main(int argc, char **argv)
     uint16_t i = 0;
     qmc5883_sample_read(0);
     parking_s = Parking_Algorithm();
-    app_send_msg();
+    app_test_send_msg();
     for(i = 0; i < sample_period; i++)
     {
       __delay_cycles(8000);
