@@ -67,15 +67,17 @@
 struct ringbuf {
   int8_t *data;
   int8_t flag; // //0: read or write, 1:only read, 2: only write
-  uint16_t total_len;
+  uint16_t size;
   /* XXX these must be 8-bit quantities to avoid race conditions. */
   uint16_t head, tail;
 };
 
-void         ringbuf_init(struct ringbuf *r, int8_t *dataptr, uint16_t size);
-int8_t       ringbuf_put(struct ringbuf *r, int8_t c);
-int8_t       ringbuf_get(struct ringbuf *r);
-int16_t      ringbuf_size(struct ringbuf *r);
-uint16_t     ringbuf_elements(struct ringbuf *r);
+void      ringbuf_init(struct ringbuf *r, int8_t *dataptr, uint16_t size);
+int8_t    ringbuf_put(struct ringbuf *r, int8_t c);
+int8_t    ringbuf_get(struct ringbuf *r);
+bool      ringbuf_is_full();
+bool      ringbuf_is_empty();
+int16_t   ringbuf_size(struct ringbuf *r);
+uint16_t  ringbuf_elements(struct ringbuf *r);
 
 #endif /* __RINGBUF_H__ */

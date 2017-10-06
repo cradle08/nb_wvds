@@ -5,7 +5,7 @@
 #define UART_RXBUF_LEN  160
 #endif
 
-void uart1_init(unsigned long baud);
+void uart1_init(uint16_t baud);
 uint8_t uart1_active(void);
 void uart1_writeb(uint8_t b);
 int uart1_send(uint8_t *data, uint16_t len);

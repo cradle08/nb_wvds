@@ -227,7 +227,7 @@
                 <option>
                     <name>FetConnection</name>
                     <version>5</version>
-                    <state>8</state>
+                    <state>0</state>
                 </option>
                 <option>
                     <name>SoftwareBreakpointEnable</name>
@@ -235,7 +235,7 @@
                 </option>
                 <option>
                     <name>RadioSoftwareBreakpointType</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>TargetSettlingtime</name>
@@ -267,7 +267,7 @@
                 </option>
                 <option>
                     <name>CRadioAutoManualType</name>
-                    <state>1</state>
+                    <state>0</state>
                 </option>
                 <option>
                     <name>ExternalCodeDownload</name>
@@ -426,7 +426,7 @@
                 </option>
                 <option>
                     <name>DynDriver</name>
-                    <state>430FET</state>
+                    <state>SIM430</state>
                 </option>
                 <option>
                     <name>dDllSlave</name>
@@ -442,7 +442,7 @@
                 </option>
                 <option>
                     <name>DdfFileName</name>
-                    <state>$TOOLKIT_DIR$\config\debugger\msp430f5310.ddf</state>
+                    <state></state>
                 </option>
                 <option>
                     <name>ProcTMS</name>
@@ -580,7 +580,7 @@
                 </option>
                 <option>
                     <name>TargetVoltage</name>
-                    <state>3.3</state>
+                    <state>###Uninitialized###</state>
                 </option>
                 <option>
                     <name>AllowLockedFlashAccessP7</name>
@@ -588,7 +588,7 @@
                 </option>
                 <option>
                     <name>CRadioProtocolType</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>CCRadioModuleTypeSlave</name>
@@ -641,7 +641,7 @@
                 </option>
                 <option>
                     <name>GPassword</name>
-                    <state></state>
+                    <state>###Uninitialized###</state>
                 </option>
                 <option>
                     <name>DebugLPM5</name>

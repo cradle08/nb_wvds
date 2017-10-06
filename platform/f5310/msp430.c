@@ -81,23 +81,20 @@ static void port_init(void)
 //**
 static void port_mapping(void)
 { 
-  
-  PMAPPWD = 0x02D52;      
-  
-  
-  
-  P4MAP7 = PM_MCLK;                            // Disable Write-Access to modify port mapping registers
+  dint();
+
   P1DIR |= BIT0;                            // ACLK set out to pins
   P1SEL |= BIT0;                            
-  P2DIR |= BIT2;                            // SMCLK set out to pins
-  P2SEL |= BIT2;                            
-  P4DIR |= BIT7;                            // MCLK set out to pins
-  P4SEL |= BIT7;   
+//  P2DIR |= BIT2;                            // SMCLK set out to pins
+//  P2SEL |= BIT2;                            
   
-  
-  
-  
-  PMAPCTL = PMAPRECFG;                      
+  P4SEL |= BIT7;  
+  P4DIR |= BIT7;      // MCLK set out to pins
+
+  PMAPPWD = 0x02D52;      
+  PMAPCTL = PMAPRECFG;    
+  //
+  P4MAP7 = PM_MCLK;// output mclk
   //I2C
   P4MAP1 = PM_UCB1SDA;//PM_UCB1SDA; 
   P4MAP2 = PM_UCB1SCL;//PM_UCB1SCL;
@@ -106,28 +103,26 @@ static void port_mapping(void)
   P4MAP5 = PM_UCA1RXD;//PM_UCA1RXD;
 
   PMAPPWD = 0;                   
-
 }
    
   
-
 // init clock and signal soure
-void msp430_dco_init(uint32_t sped)
+void msp430_dco_init(uint32_t sped) // sped=8M
 {
- 
-  dint();
+#if OS_DEBUG
   uint16_t flln = (sped /32768) - 1; //243  (8M)
   // set p5.4 p5.5 as xtclk port
-  P5SEL = 0x30;
+  P5SEL |= BIT4 + BIT5;
   // use x1in x1out(LF) as clock source
   UCSCTL6 &= ~XT1OFF;
+  UCSCTL6 &= ~XTS;
   UCSCTL6 |= XCAP_3;
-  //set fll
+  //  set fll
   __bis_SR_register(SCG0);
   UCSCTL0 = 0x0000;
-  UCSCTL1 |= DCORSEL_4; // 
+  UCSCTL1 |= DCORSEL_5; // 3.2--12.3
   UCSCTL2 |= FLLD_1 + flln;
- // UCSCTL3 |= SELREF__XT1CLK;
+  UCSCTL3 |= SELREF__XT1CLK;
   __bic_SR_register(SCG0);
   
   // wait untill dco stable
@@ -140,14 +135,41 @@ void msp430_dco_init(uint32_t sped)
     // delay wait dco stale 
     __delay_cycles(1000);
     // check oscillator fault flag
-  } while(SFRIFG1 & OFIFG);       
+  } while(SFRIFG1 & OFIFG);
   // set aclk smclk mclk clock source
-  UCSCTL4 |= SELA__XT1CLK + SELS__DCOCLK + SELM__DCOCLK; //32.768k 8m 8m
+  UCSCTL4 |= SELA__XT1CLK + SELS__DCOCLK + SELS__DCOCLK; // SEL_3:DCOCLK, SEL_4:DCOCLKDIV,32.768k 8m 8m
   eint();
+  
+ 
+#else
+  
+  P5SEL |=0x30;
+  // SET XT1 AND XT2 ON
+  UCSCTL6 &= ~XT1OFF;   
+  //XT1 WORKING UNDER LOW FREQUENCY
+  UCSCTL6 &=~XTS;
+  //CAPCITOR CHOOSE
+  UCSCTL6 |=XCAP_3;    
+  // WAIT UNTIL STABLIZATION
+  do
+  {
+    UCSCTL7 &= ~(XT1LFOFFG  + DCOFFG);
+    UCSCTL7 &=~(XT1LFOFFG);
+    _NOP();
+                                                                                                                                                                     // Clear XT2,XT1,DCO fault flags
+    SFRIFG1 &= ~OFIFG;                       // Clear fault flags
+  }
+  while (SFRIFG1&OFIFG);                   // Test oscillator fault flag
+  //CHOOSE ACK SCLK MCLK CLOCK SOURCE :ACK=32K; SCLK=AROUND 1 M; MCLK=ROUND 8M                
+  UCSCTL4 |= SELA_0+SELS_5+SELM_5;          //xt1 for aclk, xt2 for sclk and mclk
+  UCSCTL5 |=0;                         //0 divided  frequency   
+  UCSCTL1 |=DCORSEL_0;                      //DCO operating frequency in the lowest frequency 
 
+#endif
 }
 
-// cpu port and dco init
+
+//** cpu port and dco init
 void msp430_cpu_init(uint32_t sped)
 {
   dint();

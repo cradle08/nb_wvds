@@ -1,9 +1,8 @@
-#include "contiki.h"
-#include "platform-conf.h"
+#include "system.h"
 #include "qmc5883.h"
-#include "isr_compat.h"
-#include <string.h>
 
+
+/* register addr */
 #define REG_DATA_XL  0x00
 #define REG_DATA_XH  0x01
 #define REG_DATA_YL  0x02
@@ -63,26 +62,13 @@ static uint8_t qmc5883_temp[2] = {0};
 static uint8_t qmc5883_is_on = 0;
 static uint8_t qmc5883_pend = 0;
 static qmc5883_callback_t qmc5883_cb;
+#define I2C_WAIT  0X3000   //12288  //
+u16 idelay = I2C_WAIT;
 
-#if USE_CTIMER
-static struct ctimer qmc5883_ct;
-#endif
-
-#if OS_DEBUG
-  #define I2C_WAIT 128 // ~4ms //32768>>8  =128
-  #define BUSYWAIT_UNTIL(cond, max_time) do { \
-    rtimer_clock_t t0; \
-    t0 = RTIMER_NOW(); \
-    while(!(cond) && RTIMER_CLOCK_LT(RTIMER_NOW(), t0 + (max_time))) { } \
-  } while(0)
-#else
-  #define I2C_WAIT  0X3000   //12288  //
-  uint16_t idelay = I2C_WAIT;
-  #define BUSYWAIT_UNTIL(cond, max_time) do{ \
-    idelay = max_time; \
-    while(!(cond) && --idelay); \
-  }while(0)
-#endif
+#define BUSYWAIT_UNTIL(cond, max_time) do{ \
+  idelay = max_time; \
+  while(!(cond) && --idelay); \
+}while(0)
 
 /*------------------------------------------------------------------*/
 void qmc5883_read(int16_t *x, int16_t *y, int16_t *z, int16_t *t);
@@ -146,12 +132,11 @@ void qmc5883_self_test(void)
 void qmc5883_sample_read(uint8_t gain)
 {
   qmc5883_sample();
-#if !USE_ISR
-#if USE_CTIMER
+//#if !USE_ISR
+#if USE_CTIMER //0
   ctimer_set(&qmc5883_ct, (CLOCK_SECOND>>7), qmc5883_interrupt, NULL);
 #else
   qmc5883_interrupt(NULL);
-#endif
 #endif
 }
 
@@ -272,17 +257,14 @@ int qmc5883_read_regs(uint8_t reg, uint8_t len, uint8_t *buf)
 #endif
 }
 
-/*------------------------------------------------------------------*/
-// -----------------------
-//  QMC5883  MSP430F5438a
-// -----------------------
-//  SCL      P10.1
-//  SDA      P10.2
-//  CS       Px.x
-//  DRDY     P2.4
-// -----------------------
-void
-qmc5883_arch_init(void)
+
+/*================================================================
+【名 称】void qmc5883_arch_init(void)
+【功 能】I2C初始化
+【备 注】MSP430F5310 SCL P4.1 SDA P4.2 DRDY P2.0 
+================================================================*/
+
+void qmc5883_arch_init(void)
 {
   qmc5883_arch_on();
 }
@@ -290,18 +272,13 @@ qmc5883_arch_init(void)
 
 void qmc5883_arch_on(void)
 {
-  // p4.1,p4.2 SDA/SCL
   P4SEL |= BIT1+BIT2;
-  P4DIR &= ~(BIT1 + BIT2);//...
   
   UCB1CTL1 |= UCSWRST;
-  UCB1CTL0 |= UCMODE_3 + UCMST + UCSYNC;
+  UCB1CTL0 |= UCMODE_3+UCMST ;
+  UCB1CTL0 |= UCSYNC;
   UCB1CTL1 |= UCSSEL__SMCLK+UCSWRST;
-#if OS_DEBUG
-  UCB1BR0 = 40;
-#else
-  UCB1BR0 = 5;
-#endif
+  UCB1BR0 = 4;
   UCB1BR1 = 0x00;
   UCB1I2CSA = 0x0D;
 
@@ -322,11 +299,7 @@ void qmc5883_arch_on(void)
 
 void qmc5883_arch_off(void)
 {
-  // P4.1,p4.2 SDA/SCL
   P4SEL &= ~(BIT1 + BIT2);
-  P4DIR &= ~(BIT1 + BIT2);
-  P4REN |=  (BIT1 + BIT2);
-  P4OUT |=  (BIT1 + BIT2);
 
   qmc5883_is_on = 0;
 }
@@ -427,7 +400,8 @@ timeout--;
 
 */
 #if USE_ISR
-ISR(USCI_B1, USCI_B1_interrupt)
+#pragma vector = USCI_B1_VECTOR
+__interrupt void USCI_B1_ISR(void)
 {
   P2IFG &= ~BIT4;
   qmc5883_interrupt(NULL);

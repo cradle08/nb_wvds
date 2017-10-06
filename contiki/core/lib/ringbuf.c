@@ -36,15 +36,20 @@
  * \author
  *         Adam Dunkels <adam@sics.se>
  */
-
+#include "contiki.h"
+#include "platform-conf.h"
 #include "lib/ringbuf.h"
+#include "app.h"
+
+
+
 /*---------------------------------------------------------------------------*/
 void
 ringbuf_init(struct ringbuf *r, int8_t *dataptr, uint16_t size)
 {
   r->data = dataptr;
   r->flag = 0; //0: read or write, 1:only read, 2: only write
-  r->total_len = size - 1;
+  r->size = size - 1;
   r->head = 0;
   r->tail = 0;
 
@@ -62,47 +67,72 @@ ringbuf_put(struct ringbuf *r, int8_t c)
      be atomic. We use an uint8_t type, which makes access atomic on
      most platforms, but C does not guarantee this.
   */
-  uint16_t index = r->tail + 1;
-  if(index > r->total_len)
-  {
-    r->tail = 0;
-  }
-  if(index == r->head)
+  
+  if(ringbuf_is_full(r))
   {
     r->flag = 1; //0: read or write, 1:only read, 2: only write
-    return -1; // buff is full
-  }       
-  r->data[index] = c;
+    return -1;
+  } else {
+    r->tail++;
+    r->data[r->tail] = c;
+    return c;
+  }
 }
+
+/*---------------------------------------------------------------------------*/
+bool ringbuf_is_full(struct ringbuf *r)
+{
+  uint16_t index = r->tail + 1;
+  if(r->tail >= r->size)
+     index = 0;
+  if(index == r->head)
+    return true;
+  else
+    return false;
+}
+
 /*---------------------------------------------------------------------------*/
 int8_t
 ringbuf_get(struct ringbuf *r)
 {
-  uint8_t c;
-  
-  uint16_t index = r->head + 1;
-  if(index > r->total_len)
-  {
-    r->head = 0;
-  }
-  if(index  == r->tail)
+  if(ringbuf_is_empty(r))
   {
     r->flag = 2; //0: read or write, 1:only read, 2: only write
-    return -1; // buff is empty
+    return -1;
+  } else {
+    r->head++;
+    return r->data[r->head];
   }
-  return r->data[index];
 }
+  
+/*---------------------------------------------------------------------------*/
+bool ringbuf_is_empty(struct ringbuf *r)
+{
+  uint16_t index = r->head + 1;
+  if(r->head >= r->size)
+     index = 0;
+  if(index == r->tail)
+    return true;
+  else
+    return false;
+}
+
 /*---------------------------------------------------------------------------*/
 int16_t ringbuf_size(struct ringbuf *r)
 {
-  return r->total_len + 1;
+  return r->size + 1;
 }
 //**---------------------------------------------------------------------------*/
 uint16_t ringbuf_elements(struct ringbuf *r)
 {
-  if(r->head < r->tail)
+  if(ringbuf_is_full)
+  {
+    return r->size + 1;
+  } else if(ringbuf_is_empty(r)){
+    return 0;
+  }else if(r->head < r->tail)
     return r->tail - r->head;
   else
-    return r->tail + r->total_len - r->head;
+    return r->tail + 1 + r->size - r->head;
 }
 /*---------------------------------------------------------------------------*/

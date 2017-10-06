@@ -21,23 +21,22 @@ static void uart1_pkt_rcvd(void *ptr);
 
 //***
 void
-uart1_init(unsigned long baud)
+uart1_init(uint16_t baud) // baud = 8M/9600
 {
+#if OS_DEBUG
   // set as UCSI p4.5 R, p4.4 T
-  P4SEL |= 0x30;
+  P4SEL |= BIT4 + BIT5;
   P4DIR |= BIT4;
   P4DIR &= ~BIT5;
   //hold peripheral in reset state
   UCA1CTL1 |= UCSWRST;
   // smclk
-  UCA1CTL1 |= UCSSEL__SMCLK; //
+  UCA1CTL1 |= UCSSEL__SMCLK; // 8M
   // set baud rate
   UCA1BR0 = baud & 0xff;
   UCA1BR1 = baud >> 8;
   // Modulation UCBRSx = 3 
- // UCA0MCTL = UCBRS_1 | UCBRF_0;
- // UCA1MCTL = UCBRS_1;
-  //UCA1MCTL = UCBRS_0 | UCBRF_13 | UCOS16;
+  //UCA1MCTL = UCBRS_3 | UCBRF_0;
   
   transmitting = 0;
   // clear r x flag
@@ -45,8 +44,23 @@ uart1_init(unsigned long baud)
   // Initialize USCI state machine **before** enabling interrupts
   UCA1CTL1 &= ~UCSWRST;
   UCA1IE |= UCRXIE;
-
   
+#else
+  
+  P4SEL |= BIT4+BIT5;			
+  UCA1CTL1 |= UCSWRST;	
+  UCA1CTL1 |= UCSSEL_2;		//SMCLK   1048576HZ
+  //according differ rate
+  UCA1BR0=(1058576/9600);
+//  UCA1BR0=(1048576/9600);
+  UCA1BR1=0;
+
+  UCA1CTL1 &= ~UCSWRST; 		
+  UCA1IFG	&= ~UCRXIFG;    
+  UCA1IE |= UCRXIE;  
+  UCA1IE &= ~UCTXIE;
+
+#endif
 }
 
 //***
@@ -80,7 +94,6 @@ int
 putchar(int c)
 {
   uart1_writeb((char)c);
- // uart3_writeb((char)c);
   return c;
 }
 */
@@ -89,12 +102,12 @@ putchar(int c)
 void
 uart1_writeb(uint8_t c)
 {
-//  watchdog_periodic();
-  /* Loop until the transmission buffer is available. */
-  while((UCA1STAT & UCBUSY));
+//  //  watchdog_periodic(); // ...
+    while((UCA1STAT & UCBUSY));
     UCA1TXBUF = c;
 
-  /* Transmit the data. */
+//    UCA1TXBUF = c;
+//    while(!(UCA1IFG & UCTXIFG));
 
 }
 
@@ -172,3 +185,17 @@ ISR(USCI_A1, uart1_rx_interrupt)
 
 */
 
+
+//#pragma vector=USCI_A1_VECTOR
+//__interrupt void USCI_A1_ISR(void)
+//{
+//    uartRMsg.rxbuf[0] = UCA1RXBUF;
+//    _DINT();
+//    UCA1IE &=~UCRXIE;     
+//    UART1_cmd();
+//    uartRMsg.rxS = UART_TIMEOUT;
+//    uartRMsg.rxOK = TRUE;
+//    UCA1IE |=UCRXIE;  
+//    _EINT();
+//
+//}

@@ -123,11 +123,13 @@ clock_set(clock_time_t clock, clock_time_t fclock)
 void
 clock_init(void)
 {
+#if OS_DEBUG
+  
   // disable interrupe
   dint();
   // clear TA1R
   TA1CTL |= TACLR;
-  // select the signal soure, coutinus inc mode for TA1
+  // select the signal soure aclk, coutinus inc mode for TA1
   TA1CTL |= TASSEL0 + MC1;
   // enable cctl1 interrupt
   TA1CCTL1 |= CCIE;
@@ -137,6 +139,14 @@ clock_init(void)
   jiffies = 0;
   // enable interrupt
   eint();
+  
+#else 
+  TA1CTL |= TACLR;
+  TA1CTL = TASSEL0 | MC1 ;//| ID_1 ;  // 16384Hz = 128*128
+  TA1CCTL1 = CCIE;
+  TA1CCR1 = INTERVAL; 
+
+#endif
 }
 
 

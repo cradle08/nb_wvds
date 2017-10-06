@@ -41,16 +41,23 @@
 #include <string.h>
 #include <stdarg.h>
 
-//#include "dev/flash.h"
-#include "dev/leds.h"
-//#include "dev/uart.h"
-#include "dev/watchdog.h"
-#include "dev/xmem.h"
-#include "lib/random.h"
-#include "lib/sensors.h"
-#include "net/rime.h"
-#include "sys/autostart.h"
-#include "sys/unixtime.h"
+////#include "dev/flash.h"
+//#include "dev/leds.h"
+////#include "dev/uart.h"
+//
+//#include "dev/xmem.h"
+//#include "lib/random.h"
+//#include "lib/sensors.h"
+//#include "net/rime.h"
+//#include "sys/autostart.h"
+//#include "sys/unixtime.h"
+
+#include "contiki.h"
+#include "sys/ctimer.h"
+#include "platform-conf.h"
+#include "uart1.h"
+#include "qmc5883.h"
+#include "watchdog.h"
 
 /*----------------------------------------------------------------------------*/
 #define DEBUG 0
@@ -66,24 +73,16 @@ extern struct Sample_Struct One_Sample;
 extern uint8_t park_s;
 static uint16_t seq = 0;
 static uint8_t  parking_s = 3;
-
-//**
-void app_test_send_msg()
-{
-  uint8_t buf[40] = {0};
-  if(seq >= 9999) seq = 1;
-  sprintf(buf, "No=%d: x=%d,y=%d,z=%d,ps=%d", seq++, One_Sample.x, One_Sample.y, One_Sample.z, parking_s);
-  uart1_send(buf, 40);
- // uart1_send("12345", 5);
-}
+static struct ctimer mytime;
+//extern volatile clock_time_t jiffies;
 
 //** app init function
-void app_get_xyz(unsigned char *data, unsigned char *temp)
-{
-  One_Sample.x=(int16_t)((data[0]<<8) + data[1]);
-  One_Sample.y=(int16_t)((data[2]<<8) + data[3]);
-  One_Sample.z=(int16_t)((data[4]<<8) + data[5]);
-}   
+//void app_get_xyz(unsigned char *data, unsigned char *temp)
+//{
+//  One_Sample.x=(int16_t)((data[0]<<8) + data[1]);
+//  One_Sample.y=(int16_t)((data[2]<<8) + data[3]);
+//  One_Sample.z=(int16_t)((data[4]<<8) + data[5]);
+//}   
 
 int
 main(int argc, char **argv)
@@ -92,54 +91,50 @@ main(int argc, char **argv)
   //Initalize hardware.
   msp430_cpu_init(F_CPU);
   clock_init();
-
- // leds_init();
- // leds_on(LEDS_RED);
-  uart1_init(BAUD2UBR(9600)); //Must come before first printf 
-
-  //leds_on(LEDS_GREEN);
-  /* xmem_init(); */
-//  rtimer_init();
-
+  uart1_init(BAUD2UBR(9600));
   qmc5883_init();
-  qmc5883_set_callback(app_get_xyz);
-  Variant_Init();
-  uint16_t sample_period = 5;
-  while(1)
-  {
-    uint16_t i = 0;
-    qmc5883_sample_read(0);
-    parking_s = Parking_Algorithm();
-    app_test_send_msg();
-    for(i = 0; i < sample_period; i++)
-    {
-      __delay_cycles(8000);
-    }
-  }
   
-  /*
-  //Initialize Contiki and our processes.
+  
+  
+  
+  app_init(); // app data init
   process_init();
   process_start(&etimer_process, NULL);
- // process_start(&sensors_process, NULL);
-#if UNIXTIME_PROCESS
-  process_start(&unixtime_process, NULL);
-#endif
   ctimer_init();
-  //
   process_start(&NB_Device, NULL);
-  
+ // process_start(&sensors_process, NULL);
+//  process_start(&unixtime_process, NULL);
+
+  //ctimer_set(&mytime, 200, app_test_send_msg, NULL);
+
   while(1) {
-    int r;
+    uint8_t r;
     do {
-      // Reset watchdog.
-//      watchdog_periodic();
+ //     watchdog_periodic();
       r = process_run();
     } while(r > 0);
   }
-*/
+  
+  
+//     P1DIR |= BIT2;  
+//  while(1)
+//  {    
+//    uint16_t i = 0;
+//    qmc5883_sample_read(1);
+//    parking_s = Parking_Algorithm();
+//    app_test_send_msg();
+//    
+//          uint16_t i = 0;
+//          P1OUT ^=BIT2;
+//          for(i = 0; i < 1000; i++)
+//          {
+//            __delay_cycles(8000);
+//          }    
+//  }
 
 }
+
+
 
 
 

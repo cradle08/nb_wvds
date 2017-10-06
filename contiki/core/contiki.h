@@ -45,11 +45,16 @@
 #include "sys/timer.h"
 #include "sys/ctimer.h"
 #include "sys/etimer.h"
+#include "sys/unixtime.h"
 //#include "sys/rtimer.h"
 
+#include "sys/process.h"
 #include "sys/pt.h"
 
 #include "lib/ringbuf.h"
+#include "lib/list.h"
+#include "lib/memb.h"
+#include "lib/crc16.h"
 //#include "sys/procinit.h"
 
 //#include "sys/loader.h"
