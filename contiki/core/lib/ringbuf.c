@@ -45,7 +45,7 @@
 
 /*---------------------------------------------------------------------------*/
 void
-ringbuf_init(struct ringbuf *r, int8_t *dataptr, uint16_t size)
+ringbuf_init(struct ringbuf *r, uint8_t *dataptr, uint16_t size)
 {
   r->data = dataptr;
   r->flag = 0; //0: read or write, 1:only read, 2: only write
@@ -56,7 +56,7 @@ ringbuf_init(struct ringbuf *r, int8_t *dataptr, uint16_t size)
 }
 /*---------------------------------------------------------------------------*/
 int8_t
-ringbuf_put(struct ringbuf *r, int8_t c)
+ringbuf_put(struct ringbuf *r, uint8_t c)
 {
   /* Check if buffer is full. If it is full, return 0 to indicate that
      the element was not inserted into the buffer.
@@ -75,7 +75,7 @@ ringbuf_put(struct ringbuf *r, int8_t c)
   } else {
     r->tail++;
     r->data[r->tail] = c;
-    return c;
+    return 0;
   }
 }
 
@@ -92,7 +92,7 @@ bool ringbuf_is_full(struct ringbuf *r)
 }
 
 /*---------------------------------------------------------------------------*/
-int8_t
+uint8_t
 ringbuf_get(struct ringbuf *r)
 {
   if(ringbuf_is_empty(r))
@@ -118,14 +118,14 @@ bool ringbuf_is_empty(struct ringbuf *r)
 }
 
 /*---------------------------------------------------------------------------*/
-int16_t ringbuf_size(struct ringbuf *r)
+uint16_t ringbuf_size(struct ringbuf *r)
 {
   return r->size + 1;
 }
 //**---------------------------------------------------------------------------*/
 uint16_t ringbuf_elements(struct ringbuf *r)
 {
-  if(ringbuf_is_full)
+  if(ringbuf_is_full(r))
   {
     return r->size + 1;
   } else if(ringbuf_is_empty(r)){

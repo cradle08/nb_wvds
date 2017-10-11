@@ -1,701 +1,669 @@
-#include "system.h"
+#include "platform-conf.h"
+#include "contiki.h"
+#include "uart1.h"
 #include "bc95.h"
-#include "timer.h"
 #include "app.h"
+#include "m25pe.h"
 
 
-//-------------------------------------------//
-#define NB_AUTOCONNECT 0
+struct nb_at_exec atexec; // at exec struct
+struct nb_param nbparam; // nb param
+extern struct ringbuf recvringbuf; //recv ring buffer
 
-#define REPEAT_MAX 10
 
-#define BIT_SCRAMBLING  0x01
-#define BIT_SI_AVOID    0x02
-#define BIT_AUTOCONNECT 0x04
-
-//-------------------------------------------//
-u8 hdl_cmd(void);
-u8 hdl_nconfig_req(void);
-u8 hdl_nband_req(void);
-u8 hdl_csq(void);
-u8 hdl_cgsn(void);
-u8 hdl_cfun_req(void);
-u8 hdl_imsi(void);
-u8 hdl_cscon_req(void);
-u8 hdl_cereg_req(void);
-u8 hdl_cgatt_req(void);
-u8 hdl_cclk(void);
-u8 hdl_nqmgr(void);
-u8 hdl_nmgr(void);
-//-------------------------------------------//
-u8 bc95_nmgr_func(void);
-u8 bc95_nqmgr_func(void);
-u8 bc95_nmgs_func(void);
-u8 bc95_nqmgs_func(void);
-
-//-------------------------------------------//
-bc95_info bc95_i;
-bc95_smsg bc95_s;
-bc95_stu bc95_t;
-
-static bc95_callback_t bc95_rec_cb=NULL;
-//-------------------------------------------//
-void bc95_set_callback(bc95_callback_t cback)
+/* check */
+uint8_t check_atcmd_return(uint8_t* p)
 {
-  bc95_rec_cb = cback;
+   uint8_t* pvalue;
+   uint8_t* ptemp  = recvringbuf.data;
+   pvalue = strstr(ptemp, p);
+   if(pvalue == NULL) return AT_ERROR;
+   while(pvalue != recvringbuf.data+recvringbuf.head) {
+      ringbuf_get(&recvringbuf);
+   }
+   return AT_OK;
 }
 
-/*================================================================
-【名 称】 bc95_hw_init
-【功 能】 模块硬件初始化
-【备 注】 9600BAUD
-================================================================*/
-u8 nb_hw_init(void)
+
+/* exec at cmd and check its revalue , but not use it to send msg */
+uint8_t atcmd_exec_and_check(uint8_t* patcmd, uint8_t num, uint16_t delay, uint8_t* pcheck)
 {
-  uart1_init(9600);
+  uint8_t cmdstr[30] = {0};
+  uint8_t checkstr[15] = {0};
+  uint8_t cmdlen, checklen, i = 0;
   
-#if (HW_VER==0)
-  BC95_ON
-#endif 
-    
-#if (HW_VER==1)
-  P5DIR |= BIT3; //输出
-  P5SEL &= ~BIT3;
-
-  P4DIR &= ~BIT7; //输入
-  P4SEL &= ~BIT7;
-#endif
-  delay_ms(500); //Module is powered on, wait for 3 seconds
+  strcpy(cmdstr, patcmd);
+  strcpy(checkstr, pcheck);
+  cmdlen   = strlen(cmdstr);
+  checklen = strlen(checkstr);
+  atexec.retry = num;
   
-  return TRUE;
-}
-
-
-/*================================================================
-【名 称】 nb_sft_init
-【功 能】 NB入网
-【备 注】
-================================================================*/
-u8 nb_sft_init(void)
-{
-  u8 r;
-  
-  /* band 5 setting */
-  nb_cmd_tx(NBAND_REQ,"AT+NBAND?\r\n",hdl_nband_req);
-  if(BAND != bc95_i.NBAND)
-  {
-    nb_cmd_tx(NBAND_SET,"AT+NBAND=5\r\n",hdl_cmd);
-    nb_reboot(); 
-  }
-  /* autoconnect off */
-  nb_cmd_tx(NCONFIG_REQ,"AT+NCONFIG?\r\n",hdl_nconfig_req);
-  if(1 != bc95_i.AUTOCONNECT || 1 != bc95_i.SCRAMBLING || 1 != bc95_i.SI_AVOID)
-  {
-    nb_cmd_tx(NCONFIG_SET,"AT+NCONFIG=AUTOCONNECT,TRUE\r\nAT+NCONFIG=CR_0354_0338_SCRAMBLING,TRUE\r\nAT+NCONFIG=CR_0859_SI_AVOID,TRUE\r\n",NULL);
-    nb_reboot();
-  }
- 
-  do{
-    r = nb_cmd_tx(CSQ,"AT+CSQ\r\n",hdl_csq);  // signal strength
-  }while(bc95_i.CSQ==99 || bc95_i.CSQ==0);
-  
-  /* attempt to attach net */
-  do{
-    nb_att_net_req(); // wait untill attach
-  }while(!bc95_i.ATTACH);
-  
-  do{
-    nb_reg_net_req(); // register base station 
-  }while(!bc95_i.CEREG); 
-  
-  return r;
-}
-
-/*================================================================
-【名 称】 nb_att_net_req
-【功 能】 查询模块是否附着网络
-【备 注】 
-================================================================*/
-u8 nb_att_net_req(void)
-{
-  u8 r = ERR_NONE;
-  r = nb_cmd_tx(CGATT_REQ,"AT+CGATT?\r\n",hdl_cgatt_req); 
-  return r;
-}
-
-/*================================================================
-【名 称】 nb_att_net_req
-【功 能】 查询模块是否注册网络
-【备 注】 
-================================================================*/
-u8 nb_reg_net_req(void)
-{
-  u8 r = ERR_NONE;
-  r = nb_cmd_tx(CEREG_REQ,"AT+CEREG?\r\n",hdl_cereg_req);  
-  return r;
-}
-
-/*================================================================
-【名 称】 bc95_radio_on
-【功 能】 模块上线
-【备 注】 
-================================================================*/
-u8 nb_radio_on(void)
-{
-  u8 r = ERR_NONE;
-  
-  nb_cmd_tx(CFUN_REQ,"AT+CFUN?\r\n",hdl_cfun_req);
-  if(1 != bc95_i.CFUN)
-  {
-    delay_ms(1000);
-    do{
-    uart1_Tx(strlen((const char*)"AT+CFUN=1\r\n"),"AT+CFUN=1\r\n"); 
-    while(uartRMsg.rxOK != TRUE);
-    uartRMsg.rxOK = FALSE;
-    r = hdl_cmd();
-    }while(r==ERR_ACK);
-    bc95_i.CFUN = 1;
-  }
-  delay_ms(4000);  
-  return r;
-}
-
-/*================================================================
-【名 称】 bc95_radio_off
-【功 能】 模块上线
-【备 注】 返回状态 connect\psm
-================================================================*/
-u8 nb_radio_off(void)
-{
-  u8 r = ERR_NONE;
-  r = nb_cmd_tx(CFUN_CLR,"AT+CFUN=0\r\n",hdl_cmd); 
-  return r;
-}
-
-/*================================================================
-【名 称】 nb_reboot
-【功 能】 模块重启
-【备 注】 重启大概需要2~3s
-================================================================*/
-u8 nb_reboot(void)
-{
-  uart1_Tx(strlen((const char*)"AT+NRB\r\n"),"AT+NRB\r\n"); 
-  delay_ms(5000);
-  uartRMsg.rxOK = FALSE;
-  return ERR_NONE; 
-}
-
-/*================================================================
-【名 称】 nb_module_off
-【功 能】 关闭模块
-【备 注】 
-================================================================*/
-u8 nb_module_off(void)
-{
-  u8 r = ERR_NONE;
-  r = nb_radio_off();
-#if (HW_VER==0)  
-  BC95_OFF
-#endif    
-#if (HW_VER==1)
-  P5DIR |= BIT3; //输出
-  P5SEL &= ~BIT3;
-#endif
-  return r;
-}
-
-/*================================================================
-【名 称】 nb_dlbuf_req
-【功 能】 下行数据缓存条数
-【备 注】 
-================================================================*/
-u8 nb_dlbuf_req(void)
-{
-  u8 r = ERR_NONE;
-  r = nb_cmd_tx(NQMGR,"AT+NQMGR\r\n",hdl_nqmgr); 
-  return r;
-}
-
-/*================================================================
-【名 称】 nb_msg_tx
-【功 能】 消息发送
-【备 注】 datastream为处理后数据流，返回消息发送状态
-================================================================*/
-u8 hex2char(u8 hex)
-{
-  u8 r;
-  if(hex<0x0A)
-  {
-    r = hex+48;
-  }
-  else
-  {
-    r = (hex-0x0A)+65;
-  }
-  return r;
-}
-
-u8 nb_msg_tx(u16 datalen,u8* datastream)
-{
-  u16 len,i,j=0;
-  u8 r = ERR_NONE;
-  u8 charstream[BUF_SIZE] = {0};
-  sprintf((char*)charstream,"AT+NMGS=%d,",datalen);
-  i=strlen((char const*)charstream);
-  len = i;
-  for(j=0;j<=datalen;j++)
-  {
-    charstream[i++]=hex2char((datastream[j]>>4)&0x0F);
-    charstream[i++]=hex2char(datastream[j]&0x0F);
-  }
-  charstream[i++] = '\r';
-  charstream[i++] = '\n';  
-//  r = nb_cmd_tx(NMGS,charstream,hdl_cmd);
-  
-  _DINT();
-  uartRMsg.rxOK = FALSE;
-  uart1_Tx(i,charstream);  
-  // while((uartRMsg.rxOK != TRUE)&&(bc95_t.idelay--))
-  while(uartRMsg.rxOK != TRUE)
-  {
-    get_UART1_data();
-  }
-  _EINT();
-  r = hdl_cmd();
-  
-  return r;
-}
-
-/*================================================================
-【名 称】 nb_msg_rx
-【功 能】 消息接收
-【备 注】 datastream为接收数据，返回消息接收状态
-================================================================*/
-u8 nb_msg_rx(void)
-{
-  u8 r = ERR_NONE;
-  r = nb_cmd_tx(NMGR,"AT+NMGR\r\n",hdl_nmgr);
-  return r;
-}
-
-
-//-------------------------------------------//
-
-//-------------------------------------------//
-
-/*================================================================
-【名 称】 nb_cmd_tx
-【功 能】 指令发送并处理
-【备 注】 
-================================================================*/
-u8 nb_cmd_tx(u8 cmd,u8* str_at, u8 (*callback)())
-{
-  u8 r;
-
-  bc95_t.cmd = cmd;
-  bc95_t.res = ERR_NONE;
-  bc95_t.ret = 0;
-  bc95_t.idelay = 30000;
-  bc95_t.callback = callback;
-  
-  do{
-    
-    _DINT();
-    uartRMsg.rxOK = FALSE;
-    uart1_Tx(strlen((const char*)str_at),str_at);  
-   // while((uartRMsg.rxOK != TRUE)&&(bc95_t.idelay--))
-    while(uartRMsg.rxOK != TRUE)
-    {
-      get_UART1_data();
-    }
-    _EINT();
-    
-    if(!bc95_t.idelay)
-    {
-      r = ERR_ACK;
-    }
-    
-    if(uartRMsg.rxOK == TRUE)
-    {
-      r = bc95_t.callback();
-    }
-    
-    if(r >= ERR_OTHER)
-    {
-      bc95_t.ret++;
-      if(bc95_t.ret>12)
-      {
-        return FALSE;
+  nb_send(cmdstr, cmdlen);
+  etimer_set(&atexec.nbet, MS2JIFFIES(delay));
+  for(i = 0; i < atexec.retry; i++) {
+    while(etimer_expired(&atexec.nbet)) {
+      atexec.revalue = check_atcmd_return(checkstr);
+      if(atexec.revalue == AT_OK) {
+        i = 255;
+        return AT_OK;
       }
-    }    
-    else 
-    {
-      bc95_t.ret = 0;
+      if(i < atexec.retry - 1) {
+        etimer_set(&atexec.nbet, MS2JIFFIES(delay)); // try again      
+      }
     }
-    
-  }while(bc95_t.ret);
-  
-  
-  delay_ms(1000);
-  
-  return TRUE; 
-}
-
-/*================================================================
-【名 称】 hdl_cmd
-【功 能】 响应处理函数
-【备 注】 模块返回OK\ERROR
-================================================================*/
-u8 hdl_cmd(void)
-{
-  if(uartRMsg.rxIndex>6)
-    return ERR_ACK;
-  if(uartRMsg.rxbuf[2] == 'O' && uartRMsg.rxbuf[3] == 'K')
-    return ERR_NONE;
-  else 
-    return ERR_ACK;
-}
-
-/*================================================================
-【名 称】 hdl_nmgr
-【功 能】 响应处理函数
-【备 注】 [起始字 数据长度] [设备编码 命令字 消息内容] [校验码 结束字]
-================================================================*/
-extern struct ALGO algo;
-u8 hdl_nmgr(void)
-{
-  u16 i,j;
-  u8 len=0,type=0;
-  u8 *pt = NULL,datastream[1024];
-
-  // 获取接收缓冲区数据
-  pt = uartRMsg.rxbuf;
-  for(i=0;(pt[i]!='\r')&&(pt[i+1]!='\n')&&(i<1024);i++)
-  {
-    datastream[i] = uartRMsg.rxbuf[i];
-    datastream[i+1] = 0;
+    return AT_ERROR;
   }
-  // 获取数据长度
-  pt = datastream;
-  for(i=0;(pt[i]!=',')&&(i<1024);i++)
-  {
-    len = 10*len+(pt[i]-48);
-  }  
-  // 获取数据
-  j=i+1;
-
-  for(i=0;i<2*len;i++,j++)
-  {
-    if(pt[j]>'9')
-    {
-      pt[i] = pt[j] - 55;
-    }
-    else if(pt[j]<'A')
-    {
-      pt[i] = pt[j] - 48;      
-    }
-  }
-  
-  // 判断帧头
-  if(pt[0]!=0x0A && pt[1]!=0x0A)
-  {
-    return ERR_ACK;
-  }
-  // 判断 [ack or crtl msg] 
-  if(pt[2]==0x03&&pt[3]==0x07)
-  {
-    type = pt[4];
-    //
-    return ERR_NONE;
-  }
-  else if(pt[2]!=0x04&&pt[3]!=0x07)
-  {
-    algo.normalT = (uint16_t)(pt[4]<<4+pt[5])+(pt[6]+pt[7]);        
-    algo.flunctT = (uint16_t)(pt[8]<<4+pt[9])+(pt[10]+pt[11]);;   
-    algo.big_occ_thresh = (uint16_t)(pt[12]<<4+pt[13])+(pt[14]+pt[15]);   
-    algo.mid_occ_thresh = (uint16_t)(pt[16]<<4+pt[17])+(pt[18]+pt[19]);   
-    algo.litt_occ_thresh = (uint16_t)(pt[20]<<4+pt[21])+(pt[22]+pt[23]);;  
-
-    return ERR_NONE;  
-  }
-  
-  if(bc95_rec_cb) 
-  {
-    bc95_rec_cb(datastream);
-  }
-
-  return ERR_NONE; 
-}
-
-/*================================================================
-【名 称】 hdl_cclk
-【功 能】 响应处理函数
-【备 注】 模块返回基站时钟
-================================================================*/
-u8 tstamp[6];
-u8 hdl_cclk(void)
-{
-  u8 *pt = NULL;
-  u8 i;
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"+CCLK");
-  if(!pt)
-    return ERR_ACK;
-  pt += strlen("+CCLK:");
-  for(i=0;i<17;)
-  {
-    tstamp[i/3]=10*(*pt)+*(pt+1);
-    i+=3;
-    pt+=3;
-  }
-  return ERR_NONE;
 }
 
 
-/*================================================================
-【名 称】 hdl_nqmgr
-【功 能】 响应处理函数
-【备 注】 模块返回接收情况
-================================================================*/
-u8 hdl_nqmgr(void)
+/* nb network init */
+void nb_network_init()
 {
-  u8 *pt = NULL;
-  u8 i;
+  uint8_t cmdlen, checklen;
+  uint8_t cmdstr[30] = {0};
+  uint8_t checkstr[15] = {0};
   
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"BUFFERED=");
-  if(!pt)
-    return ERR_ACK;
-  pt += strlen("BUFFERED=");
-  for(i=0;*(pt+i)!=',';i++)
-    bc95_s.rBuffered = 10*bc95_s.rBuffered+(*(pt+i)-48); 
+
+  atcmd_exec_and_check("AT\r\n" , 5, 150, "OK"); // AT try=5, delay=150
+  atcmd_exec_and_check("AT+CGATT?\r\n", 30, 3000, "+CGATT:1"); //   // check CGATT (actach network)   try=30, delay=3000
+  atcmd_exec_and_check("AT+CEREG?\r\n", 5, 150, "+CEREG:1,1"); // check CEREG (registrotion  status)  try=5, delay=150
   
-  return ERR_NONE;
+  uint8_t buf[30] ={0}; 
+  sprintf(buf, "AT+NSOCR=DGRAM,17,%d,1\r\n", nbparam.serport);
+  atcmd_exec_and_check(buf, 5, 150, "+CEREG:"); // check CEREG (registrotion  status)  try=5, delay=150
+   
 }
 
 
-/*================================================================
-【名 称】 hdl_imsi
-【功 能】 响应处理函数
-【备 注】 模块返回sim卡号
-================================================================*/
-u8 hdl_imsi(void)
+/*  nb device init */
+void nb_module_init()
 {
-  u8 i,*pt = uartRMsg.rxbuf+2;
+  P5DIR |= BIT3; //out
+  P5SEL &= ~BIT3;
+
+  P4DIR &= ~BIT7; //int
+  P4SEL &= ~BIT7;
   
-  for(i=0;*(pt+i)!='\r';i++){
-    if(*(pt+i)>57 || *(pt+i)<48)  // 非数字
-      return ERR_ACK;
-    bc95_i.IMSI[i] = *(pt+i);
-  }
+  NB_POWER_ON
   
-  return ERR_NONE;
+  nbparam.serport = DEFAULT_LOCAL_PORT;
+  atexec.prb   = &recvringbuf;
 }
 
-/*================================================================
-【名 称】 hdl_nband_req
-【功 能】 响应处理函数
-【备 注】 模块返回当前频段
-================================================================*/
-u8 hdl_nband_req(void)
+
+/* nb sernd msg func*/
+void nb_send(uint8_t* msg, uint16_t len)
 {
-  u8 *pt = NULL;
-  u8 i,band = 0;
-  
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"+NBAND:");
-  if(pt == NULL)
-    return ERR_OTHER;
-  
-  pt += strlen("+NBAND:");
-
-  for(i=0;pt[i]!='\r';i++)
-    band = band + (pt[i]-48);
-  
-  bc95_i.NBAND = band;
-  
-  return ERR_NONE;
- }
-
-/*================================================================
-【名 称】 hdl_cgatt_req
-【功 能】 响应处理函数
-【备 注】 模块返回附网状态
-================================================================*/
-u8 hdl_cgatt_req(void)
-{
-  u8 r, *pt = NULL;
-
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"+CGATT:");
-  if(pt == NULL)
-    return ERR_OTHER; 
-  
-  pt += strlen("+CGATT:");
-    r = *pt-48;
- 
-  if(r!=1 && r!=0)
-    r = ERR_ACK;
-  
-  bc95_i.ATTACH = r;
-  
-  return ERR_NONE;
+  uint8_t* ptemp = msg;
+  uart1_send(ptemp, len);
 }
 
-/*================================================================
-【名 称】 hdl_cereg_req
-【功 能】 响应处理函数
-【备 注】 模块返回注网状态
-================================================================*/
-u8 hdl_cereg_req(void)
-{
-  u8 r, *pt = NULL;
 
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"+CEREG:");
-  if(pt == NULL)
-    return ERR_OTHER; 
-  
-  pt += strlen("+CEREG:0,");
-  if(*pt<48 || *pt>57)
-    r = ERR_ACK;
-  else 
-    r = *pt-48;
-  
-  bc95_i.CEREG = r;
-  
-  return ERR_NONE;
-}
 
-/*================================================================
-【名 称】 hdl_cscon_req
-【功 能】 响应处理函数
-【备 注】 模块返回基站连接状态
-================================================================*/
-u8 hdl_cscon_req(void)
-{
-  u8 r, *pt = NULL;
 
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"+CSCON:");
-  if(pt == NULL)
-    return ERR_OTHER; 
-  
-  pt += strlen("+CSCON:0,");
-  if(*pt != 48 && *pt != 49)
-    r = ERR_ACK;
-  else 
-    r = *pt-48;
-  
-  bc95_i.CSCON = r;  
-  
-  return ERR_NONE;
-}
 
-/*================================================================
-【名 称】 hdl_cfun_req
-【功 能】 响应处理函数
-【备 注】 设备返回射频状态
-================================================================*/
-u8 hdl_cfun_req(void)
-{
-  u8 r;
-  u8 *pt = NULL;
-
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"+CFUN:");
-  if(pt == NULL)
-    return ERR_OTHER; 
-  
-  pt += strlen("+CFUN:");
-  if(*pt != 48 && *pt != 49)
-    r = ERR_ACK;
-  else
-    r = *pt-48;
-  
-  bc95_i.CFUN = r;
-  
-  return r;  
-}
-
-/*================================================================
-【名 称】 hdl_cgsn
-【功 能】 响应处理函数
-【备 注】 模块返回模块识别号
-================================================================*/
-u8 hdl_cgsn(void)
-{
-  u8 i,*pt = NULL;  
-
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"+CGSN:");
-  if(pt == NULL)
-    return ERR_ACK; 
-  pt += strlen("+CGSN:");
-  
-  for(i=0;*(pt+i)!='\r';i++)
-    bc95_i.IMEI[i]=*(pt+i);
-  
-  return ERR_NONE; 
-}
-
-/*================================================================
-【名 称】 hdl_csq
-【功 能】 响应处理函数
-【备 注】 模块返回信号值
-================================================================*/
-u8 hdl_csq(void)
-{
-  u8 i,r = 0,*pt = NULL;
-  
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"+CSQ:");
-  if(pt == NULL)
-    return ERR_OTHER;    
-  
-  pt += strlen("+CSQ:");
-  for(i=0;pt[i]!=',';i++)
-    r = 10*r + (pt[i]-48);
-  
-  bc95_i.CSQ = r;
-  
-  return ERR_NONE;
-}
-
-/*================================================================
-【名 称】 hdl_nconfig_req
-【功 能】 响应处理函数
-【备 注】 模块返回模块配置
-================================================================*/
-u8 hdl_nconfig_req(void)
-{
-  u8 *pt = NULL;
-
-  pt = (u8*)strstr((char*)uartRMsg.rxbuf,"AUTOCONNECT,");
-  if(pt == NULL)
-    return ERR_ACK; 
-  
-  pt += strlen("AUTOCONNECT,");
-  if(*pt == 'T')
-    bc95_i.AUTOCONNECT = 1;
-  else if(*pt == 'F')
-    bc95_i.AUTOCONNECT = 0;
-  else 
-    return ERR_ACK;
- 
-  pt = (u8*)strstr((char*)pt,"CR_0354_0338_SCRAMBLING,") + strlen("CR_0354_0338_SCRAMBLING,");
-  if(pt == NULL)
-    return ERR_ACK;
-  
-  if(*pt == 'T')
-    bc95_i.SCRAMBLING = 1;
-  else if(*pt == 'F')
-    bc95_i.SCRAMBLING = 0;
-  else 
-    return ERR_ACK;
-  
-  
-  pt = (u8*)strstr((char*)pt,"CR_0859_SI_AVOID,") + strlen("CR_0859_SI_AVOID,");
-  if(pt == NULL)
-    return ERR_ACK;    
-  
-  if(*pt == 'T')
-    bc95_i.SI_AVOID = 1;
-    else if(*pt == 'F')
-    bc95_i.SI_AVOID = 0;
-  else 
-    return ERR_ACK;
-  
-  return ERR_NONE; 
-}
+//
+///*================================================================
+//【名 称】 nb_syt_init
+//【功 能】 NB入网
+//【备 注】
+//================================================================*/
+//uint8_t nb_syt_init(void)
+//{
+///* 读取或初始化NB模块特定信息 */
+// // m25pe_read(NV_NBIB_ADDR,(uint8_t*)&nbib, sizeof(struct NBIB));
+//  if(nbib.magic != NV_MAGIC)
+//  {
+//    memset(&nbib, 0, sizeof(struct NBIB));
+//    nbib.magic = NV_MAGIC;
+//    nbib.reserved[0] = 0;
+//    nbib.reserved[1] = 0;
+//    strcpy((char *)nbib.apn,"CTNB");
+//    strcpy((char *)nbib.server_ip,"58.250.57.68");
+//    strcpy((char *)nbib.server_port,"3075");
+//    strcpy((char *)nbib.local_port,"6008");
+// //   m25pe_write(NV_NBIB_ADDR, (uint8_t*)&nbib, sizeof(struct NBIB));  
+//  }
+//  
+//  uint8_t res = TRUE;
+//  uint8_t ret = 0;
+//  uint8_t step = 1;
+//  // AT_sync
+//  for(ret=0;ret<11;ret++)
+//  {
+//    res = nb_cmd_tx("AT\r\n", hdl_cmd);
+//    if(ERR_NONE == res && 1 == step )
+//    {
+//      step++;
+//      break;
+//    }
+//    if(ret == 10)
+//    {
+//      return step;
+//    }
+//    delay_ms(1000);
+//  }
+//
+//  // query_CSQ
+//  for(ret=0;ret<16;ret++)
+//  {
+//    res = nb_cmd_tx("AT+CSQ\r\n", hdl_csq);
+//    if(ERR_NONE == res && 2 == step )
+//    {
+//      if(nb_i.csq<32||nb_i.csq>8)
+//      {      
+//        step++;
+//        break;
+//      }
+//    }
+//    if(ret == 15)
+//    {
+//      return FALSE;
+//    }
+//    delay_ms(2000);
+//  }  
+//  
+//  // query_ATTCH
+//  for(ret=0;ret<21;ret++)
+//  {
+//    res = nb_cmd_tx("AT+CGATT?\r\n", hdl_cgatt);
+//    if(ERR_NONE == res && 3 == step )
+//    {
+//      if(1 == nb_i.attach)
+//      {      
+//        step++;
+//        break;
+//      }
+//    }
+//    if(ret == 20)
+//    {
+//      return FALSE;
+//    }
+//    delay_ms(4000);
+//  }
+//  
+//  // query_CEREG
+//  for(ret=0;ret<10;ret++)
+//  {
+//    res = nb_cmd_tx("AT+CEREG?\r\n", hdl_cereg);
+//    if(ERR_NONE == res && 4 == step )
+//    {
+//      if(1 == nb_i.cereg)
+//      {      
+//        step++;
+//        break;
+//      }
+//    }
+//    if(ret == 9)
+//    {
+//      return FALSE;
+//    }
+//    delay_ms(1000);
+//  }
+//
+//  //configuration PDP
+//  uint8_t cmd[30];
+//  sprintf((char*)cmd,"AT+CGDCONT=1,\"IP\",\"%s\"\r\n",nbib.apn);
+//  for(ret=0;ret<5;ret++)
+//  {
+//    res = nb_cmd_tx(cmd, hdl_cmd);
+//    if(ERR_NONE == res && 5 == step )
+//    {   
+//        step++;
+//        break;
+//    }
+//    if(ret == 4)
+//    {
+//      return FALSE;
+//    }
+//    delay_ms(500);
+//  }
+//  
+//  // creat socket
+//  sprintf((char*)cmd,"AT+NSOCR=DGRAM,17,%s,0\r\n",nbib.local_port); // 忽略返回消息
+//  for(ret=0;ret<5;ret++)
+//  {
+//    res = nb_cmd_tx("AT+NSOCL=0\r\n", hdl_cmd);
+//    delay_ms(500);
+//    res = nb_cmd_tx(cmd, hdl_nsocr);
+//    if(ERR_NONE == res && 6 == step )
+//    {
+//        step++;
+//        break;
+//    }
+//    if(ret == 4)
+//    {
+//      return FALSE;
+//    }
+//    delay_ms(500);
+//  } 
+//  
+//  return step;
+//}
+//
+//
+///*================================================================
+//【名 称】 bc95_radio_on
+//【功 能】 模块上线
+//【备 注】 
+//================================================================*/
+//uint8_t nb_radio_on(void)
+//{
+//  uint8_t r = ERR_NONE;
+//  
+//  nb_cmd_tx("AT+CFUN?\r\n",hdl_cfun);
+//  if(1 != nb_i.cfun)
+//  {
+//    delay_ms(1000);
+//    do{
+//    uart1_Tx(strlen((const char*)"AT+CFUN=1\r\n"),"AT+CFUN=1\r\n"); 
+//    while(uartRMsg.rxOK != TRUE);
+//    uartRMsg.rxOK = FALSE;
+//    r = hdl_cmd();
+//    }while(r==ERR_ACK);
+//    nb_i.cfun = 1;
+//  }
+//  delay_ms(4000);  
+//  return r;
+//}
+//
+///*================================================================
+//【名 称】 bc95_radio_off
+//【功 能】 模块上线
+//【备 注】 返回状态 connect\psm
+//================================================================*/
+//uint8_t nb_radio_off(void)
+//{
+//  uint8_t r = ERR_NONE;
+//  r = nb_cmd_tx("AT+CFUN=0\r\n",hdl_cmd); 
+//  return r;
+//}
+//
+///*================================================================
+//【名 称】 nb_reboot
+//【功 能】 模块重启
+//【备 注】 重启大概需要2~3s
+//================================================================*/
+//uint8_t nb_reboot(void)
+//{
+//  uart1_Tx(strlen((const char*)"AT+NRB\r\n"),"AT+NRB\r\n"); 
+//  delay_ms(5000);
+//  uartRMsg.rxOK = FALSE;
+//  return ERR_NONE; 
+//}
+//
+///*================================================================
+//【名 称】 nb_module_off
+//【功 能】 关闭模块
+//【备 注】 
+//================================================================*/
+//uint8_t nb_module_off(void)
+//{
+//  uint8_t r = ERR_NONE;
+//  r = nb_radio_off();
+//
+//  P5DIR |= BIT3; //输出
+//  P5SEL &= ~BIT3;
+//
+//  return r;
+//}
+//
+//
+///*================================================================
+//【名 称】 nb_msg_tx
+//【功 能】 消息发送
+//【备 注】 datastream为处理后数据流，返回消息发送状态
+//================================================================*/
+//uint8_t dict[16][3]={
+//  {0x00,0x33,0x30},{0x01,0x33,0x31},{0x02,0x33,0x32},{0x03,0x33,0x33},
+//  {0x04,0x33,0x34},{0x05,0x33,0x35},{0x06,0x33,0x36},{0x07,0x33,0x37},
+//  {0x08,0x33,0x38},{0x09,0x33,0x39},{0x0A,0x34,0x31},{0x0B,0x34,0x32},
+//  {0x0C,0x34,0x33},{0x0D,0x34,0x34},{0x0E,0x34,0x35},{0x0F,0x34,0x36},
+//};
+//
+////数据格式转换
+//void dformat_transform(uint8_t* dest, uint8_t* scr, uint16_t datalen)
+//{
+//  uint16_t i;
+//  uint8_t c;
+//  for(i=0;i<datalen;i++)
+//  {
+//    c = (scr[i]>>4)&0x0F; // H
+//    dest[4*i+0] = dict[c][1];
+//    dest[4*i+1] = dict[c][2];      
+//    c = scr[i]&0x0F; // L
+//    dest[4*i+2] = dict[c][1];
+//    dest[4*i+3] = dict[c][2];    
+//  }
+//  return ;
+//}
+//
+//uint8_t nb_msg_tx(uint16_t datalen,uint8_t* datastream)
+//{
+//  uint16_t len = datalen;
+//  uint8_t res = ERR_NONE;
+//  uint32_t idelay = 0x3000;
+//  
+//  uint8_t charstream[BUF_SIZE];
+//
+//  _DINT();
+//  uartRMsg.rxOK = FALSE; 
+//  memset(charstream, 0, BUF_SIZE);
+//  sprintf((char*)charstream,"AT+NSOST=%d,%s,%s,%d,",nb_i.socket,nbib.server_ip,nbib.server_port,2*len);
+//  len=strlen((char const*)charstream);
+//  uart1_Tx(len,charstream);
+//  
+//  dformat_transform(charstream,datastream,datalen);
+//  charstream[4*datalen] = '\r';
+//  charstream[4*datalen+1] = '\n'; 
+//  uart1_Tx(4*datalen+2,charstream);
+////  while(idelay--)
+////  while(uartRMsg.rxOK != TRUE)
+////  {
+////    get_UART1_data();
+////  }
+//  _EINT();
+//  if(!idelay)
+//  {
+//    res = ERR_ACK;  //超时
+//  }
+//  if(uartRMsg.rxOK == TRUE)
+//  {
+//    res = hdl_nsost(); // 响应处理
+//  }
+//  
+//  return res;
+//}
+//
+///*================================================================
+//【名 称】 nb_msg_rx
+//【功 能】 消息接收
+//【备 注】 datastream为接收数据，返回消息接收状态
+//================================================================*/
+//uint8_t nb_msg_rx(void)
+//{
+//  uint8_t r = ERR_NONE;
+//
+//  return r;
+//}
+//
+//
+///*================================================================
+//【名 称】 nb_cmd_tx
+//【功 能】 指令发送并处理
+//【备 注】 
+//================================================================*/
+//uint8_t nb_cmd_tx(uint8_t* str_at, uint8_t (*callback)())
+//{
+//  uint8_t res;
+//  uint32_t idelay = 30000;
+//  
+//  // 发送指令
+//  _DINT();
+//  uartRMsg.rxOK = FALSE;
+//  uart1_Tx(strlen((const char*)str_at),str_at);  
+//  while(idelay--)
+//  {
+//    get_UART1_data();
+//  }
+//  _EINT();
+//  if(!idelay)
+//  {
+//    res = ERR_ACK;  //超时
+//  }
+//  if(uartRMsg.rxOK == TRUE)
+//  {
+//    res = callback(); // 响应处理
+//  }
+//  
+//  return res;
+//}
+//
+///*================================================================
+//【名 称】 hdl_cmd
+//【功 能】 响应处理函数
+//【备 注】 模块返回OK\ERROR
+//================================================================*/
+//uint8_t hdl_cmd(void)
+//{
+//  if(uartRMsg.rxIndex>6)
+//    return ERR_ACK;
+//  if(uartRMsg.rxbuf[2] == 'O' && uartRMsg.rxbuf[3] == 'K')
+//    return ERR_NONE;
+//  else 
+//    return ERR_ACK;
+//}
+//
+///*================================================================
+//【名 称】 hdl_nsocr
+//【功 能】 响应处理函数
+//【备 注】 模块返回OK\ERROR
+//================================================================*/
+//uint8_t hdl_nsocr(void)
+//{
+//  if(uartRMsg.rxIndex!=11)
+//    return ERR_ACK;
+//  if(uartRMsg.rxbuf[7] == 'O' && uartRMsg.rxbuf[8] == 'K')
+//  {
+//    nb_i.socket = uartRMsg.rxbuf[2]-0x30;
+//    return ERR_NONE;
+//  }  
+//  else 
+//  {
+//    return ERR_ACK;
+//  }
+//}
+//
+///*================================================================
+//【名 称】 hdl_nsost
+//【功 能】 响应处理函数
+//【备 注】 模块返回OK\ERROR
+//================================================================*/
+//uint8_t hdl_nsost(void)
+//{
+//  uint8_t res,i,socket_t;
+//  uint32_t idelay = 0x8000;
+//  if(uartRMsg.rxIndex<12)
+//    return ERR_ACK;
+//  socket_t = uartRMsg.rxbuf[2];
+//  for(i=4;uartRMsg.rxbuf[i]!='\r';i++);
+//  if(uartRMsg.rxbuf[i+4] == 'O' && uartRMsg.rxbuf[i+5] == 'K')  // 成功发送数据
+//  {
+////      while(idelay--)
+////    while(uartRMsg.rxOK != TRUE)
+////    {
+////      get_UART1_data(); // 等待接收
+////    }
+////    _EINT();
+////    if(!idelay)
+////    {
+////      res = ERR_ACK;  // 超时重发
+////    }
+////    if(uartRMsg.rxOK == TRUE)
+////    {
+////      uint8_t* pt = NULL;
+////      uint8_t buf[20]={0};
+////      
+////      if(pt = (uint8_t*)strstr((const char*)uartRMsg.rxbuf,"+NSONMI"))  // 获取下行消息 +NSONMI:0，6
+////      {
+////        pt+=8;
+////        if(socket_t==*pt) // 同一socket
+////        {
+////          pt+=2;
+////          sprintf((char*)buf,"AT+NSORF=%d,%d",socket_t);
+////          do{
+////            res = nb_cmd_tx(buf,hdl_nsorf); //解析响应，若获取为空则退出
+////          }while(res);
+////        }
+////        else
+////        {
+////          res = ERR_ACK; // 非同一socket
+////        }
+////      
+////      }
+////      else
+////      {
+////        res = ERR_ACK;  // 错误响应重发
+////      }
+////    }
+//    return ERR_NONE;
+//  }  
+//  else 
+//  {
+//    return ERR_ACK;
+//  }
+//}
+//
+///*================================================================
+//【名 称】 hdl_nsorf
+//【功 能】 响应处理函数
+//【备 注】 模块返回OK\ERROR
+//================================================================*/
+//uint8_t hdl_nsorf(void)
+//{
+//  return 0;
+//}
+//
+///*================================================================
+//【名 称】 hdl_cclk
+//【功 能】 响应处理函数
+//【备 注】 模块返回基站时钟
+//================================================================*/
+//uint8_t tstamp[6];
+//uint8_t hdl_cclk(void)
+//{
+//  uint8_t *pt = NULL;
+//  uint8_t i;
+//  pt = (uint8_t*)strstr((char*)uartRMsg.rxbuf,"+CCLK");
+//  if(!pt)
+//    return ERR_ACK;
+//  pt += strlen("+CCLK:");
+//  for(i=0;i<17;)
+//  {
+//    tstamp[i/3]=10*(*pt)+*(pt+1);
+//    i+=3;
+//    pt+=3;
+//  }
+//  return ERR_NONE;
+//}
+//
+//
+///*================================================================
+//【名 称】 hdl_nband
+//【功 能】 响应处理函数
+//【备 注】 模块返回当前频段
+//================================================================*/
+//uint8_t hdl_nband(void)
+//{
+//  uint8_t *pt = NULL;
+//  uint8_t i,band = 0;
+//  
+//  pt = (uint8_t*)strstr((char*)uartRMsg.rxbuf,"+NBAND:");
+//  if(pt == NULL)
+//    return ERR_OTHER;
+//  
+//  pt += strlen("+NBAND:");
+//
+//  for(i=0;pt[i]!='\r';i++)
+//    band = band + (pt[i]-48);
+//  
+//  nb_i.nband = band;
+//  
+//  return ERR_NONE;
+// }
+//
+///*================================================================
+//【名 称】 hdl_cgatt
+//【功 能】 响应处理函数
+//【备 注】 模块返回附网状态
+//================================================================*/
+//uint8_t hdl_cgatt(void)
+//{
+//  uint8_t r, *pt = NULL;
+//
+//  pt = (uint8_t*)strstr((char*)uartRMsg.rxbuf,"+CGATT:");
+//  if(pt == NULL)
+//    return ERR_OTHER; 
+//  
+//  pt += strlen("+CGATT:");
+//    r = *pt-48;
+// 
+//  if(r!=1 && r!=0)
+//    r = ERR_ACK;
+//  
+//  nb_i.attach = r;
+//  
+//  return ERR_NONE;
+//}
+//
+///*================================================================
+//【名 称】 hdl_cereg
+//【功 能】 响应处理函数
+//【备 注】 模块返回注网状态
+//================================================================*/
+//uint8_t hdl_cereg(void)
+//{
+//  uint8_t r, *pt = NULL;
+//
+//  pt = (uint8_t*)strstr((char*)uartRMsg.rxbuf,"+CEREG:");
+//  if(pt == NULL)
+//    return ERR_OTHER; 
+//  
+//  pt += strlen("+CEREG:0,");
+//  if(*pt<48 || *pt>57)
+//    r = ERR_ACK;
+//  else 
+//    r = *pt-48;
+//  
+//  nb_i.cereg = r;
+//  
+//  return ERR_NONE;
+//}
+//
+///*================================================================
+//【名 称】 hdl_cfun
+//【功 能】 响应处理函数
+//【备 注】 设备返回射频状态
+//================================================================*/
+//uint8_t hdl_cfun(void)
+//{
+//  uint8_t r;
+//  uint8_t *pt = NULL;
+//
+//  pt = (uint8_t*)strstr((char*)uartRMsg.rxbuf,"+CFUN:");
+//  if(pt == NULL)
+//    return ERR_OTHER; 
+//  
+//  pt += strlen("+CFUN:");
+//  if(*pt != 48 && *pt != 49)
+//    r = ERR_ACK;
+//  else
+//    r = *pt-48;
+//  
+//  nb_i.cfun = r;
+//  
+//  return r;  
+//}
+//
+//
+///*================================================================
+//【名 称】 hdl_csq
+//【功 能】 响应处理函数
+//【备 注】 模块返回信号值
+//================================================================*/
+//uint8_t hdl_csq(void)
+//{
+//  uint8_t i,r = 0,*pt = NULL;
+//  
+//  pt = (uint8_t*)strstr((char*)uartRMsg.rxbuf,"+CSQ:");
+//  if(pt == NULL)
+//    return ERR_OTHER;    
+//  
+//  pt += strlen("+CSQ:");
+//  for(i=0;pt[i]!=',';i++)
+//    r = 10*r + (pt[i]-48);
+//  
+//  nb_i.csq = r;
+//  
+//  return ERR_NONE;
+//}

@@ -1,144 +1,55 @@
-#ifndef _BC95_H_
-#define _BC95_H_
+#ifndef __BC95_H__
+#define __BC95_H__
 
-#include "uart.h"
+#include "sys/etimer.h"
+#include "lib/ringbuf.h"
 
-//-----------------------------------//
-typedef u8 (*bc95_callback_t)(u8*);
-
-#define BC95_OFF  P1OUT &= ~BIT0;
-#define BC95_ON   P1DIR |= BIT0;  \
-                  P1OUT |= BIT0;
-
-#define ERR_NONE    ( 0)
-#define ERR_OTHER   (0XFD)
-#define ERR_REBOOT  (0XFE)
-#define ERR_ACK     (0XFF)
+#define NB_POWER_OFF    P5OUT |=BIT3;
+#define NB_POWER_ON     P5OUT &= ~BIT3;
 
 /* Connected Device Platform(CDP) server*/
-#define CDP_IP    "112.93.129.154"
-#define CDP_PORT  "5683"
-/*  */
-#define BAND 5
+#define DEFAULT_SERVER_IP    "58.250.57.68"
+#define DEFAULT_SERVER_PORT  3075
+#define DEFAULT_LOCAL_PORT   6677
+#define BAND                  5
 
-#define AT_NCDP_SET		"AT+NCDP=112.93.129.154\r\n"
+//#define AT_NRB     "AT+NRB" // reboot nb module
+//#define AT_NBAND   "AT+NBAND" // get nb baud
+//#define AT_CGATT   "AT+CGATT" // attach network
+//#define AT_CSQ     "AT+CSQ" // query quaility
+////#define AT_NSOCR   "AT+NSOCR=DGRAM,17,3005,1" // create socket
+//#define AT+NSOCL   "AT+NSOCL"  // close socket
+//#define AT_CEREG   "AT+CEREG" //current EPS Network Registration Status
+//#define AT_NSOST   "AT+NSOST" // send msg AT cmd
+//#define AT_NSORF   AT+NSORF // recv msg AT cmd
 
-#define AT_NQMGR  "AT+NQMGR\r\n"
-#define AT_NQMGS  "AT+NQMGS\r\n" 
-#define AT_NMGR   "AT+NMGR\r\n"
-
-//-----------------------------------//
-typedef struct{
-  u8 ACTIVE;
-  u8 ABNORMAL_REBOOT;
-  u8 AUTOCONNECT;
-  u8 SCRAMBLING;
-  u8 SI_AVOID;
-  u8 NBAND;
-  u8 CFUN;
-  u8 ATTACH;
-  u8 CEREG;
-  u8 CSCON;   // 0 IDLE 1 CONNECT
-  u8 CSQ;
-  u8 IMSI[20]; //sim
-  u8 IMEI[20]; //bc95
-}bc95_info;
-
-typedef struct{
-  u8 cmd;       
-  u8 res;          // OVERTIME\OK\ERR
-  u8 ret;          // 重发次数 
-  u16 idelay;
-  u8(*callback)(void); // 
-}bc95_stu;
-
-typedef  bc95_stu* bc95_stu_t;
-
-typedef struct{
-  u8 rBuffered;
-  u8 rReceived;
-  u8 rDropped;
-}bc95_smsg;
-
-enum{  
-  NONE = 0X00,
-  NRB = 0x01,
-  
-  CFUN_REQ,  
-  CFUN_SET,
-  CFUN_CLR, 
-  
-  CGATT_REQ,  
-  CGATT_SET,
-  
-  NBAND_REQ,
-  NBAND_SET,
-  
-  CGSN,     
-  CIMI,
-  NCDP,        
-  COPS,         
-  CGDCONT,  
-  CSQ,
-  CCLK,
-  
-  CEREG_REQ,
-  CSCON_REQ,
-  
-  NCONFIG_REQ,
-  NCONFIG_SET,
-  
-  NQMGR,  
-  NMGR,      
-  NMGS,
+enum {
+  AT_OK = 0,
+  AT_ERROR
 };
 
-//-----------------------------------//
+struct nb_param {
+  uint8_t  seraddr[15]; // server ip address
+  uint16_t serport; // server port
+  uint8_t  localport; // local port
+  uint8_t  nb_csq; // nb signal
+  uint8_t  imsi[15];  // IMSI no
+};
+  
+struct nb_at_exec {
+  uint8_t retry; // re try times
+  uint8_t revalue; // re value
+  struct ringbuf* prb; // recv ring buf
+  struct etimer nbet;  
+};
+  
+uint8_t atcmd_exec_and_check(uint8_t* patcmd, uint8_t num, uint16_t delay, uint8_t* pcheck);
+uint8_t check_atcmd_return(uint8_t* p);
+uint8_t* find_at_return_value(uint8_t* p);
 
-u8 nb_hw_init(void);
-u8 nb_sft_init(void);
-u8 nb_att_net_req(void);
-u8 nb_reg_net_req(void);
-u8 nb_radio_on(void);
-u8 nb_radio_off(void);
-u8 nb_reboot(void);
-u8 nb_module_off(void);
-u8 nb_msg_tx(u16 datalen,u8* datastream);
-u8 nb_dlbuf_req(void);
-u8 nb_msg_rx(void);
+void nb_send(uint8_t* msg, uint16_t len);
+void nb_module_init();
+void nb_network_init();
 
-//nb_cmd_tx(NCONFIG_REQ,"AT+NCONFIG?\r\n",hdl_nconfig_req);
-//nb_cmd_tx(NBAND_SET,"AT+NBAND=5\r\n",hdl_cmd); 
-//nb_cmd_tx(NBAND_REQ,"AT+NBAND?\r\n",hdl_nband_req);
-//nb_cmd_tx(CFUN_REQ,"AT+CFUN?\r\n",hdl_cfun_req);
-//nb_cmd_tx(CIMI,"AT+CIMI\r\n",hdl_imsi); 
-//nb_cmd_tx(CSQ,"AT+CSQ\r\n",hdl_csq); 
-//nb_cmd_tx(CGATT_REQ,"AT+CGATT?\r\n",hdl_cgatt_req); 
-//nb_cmd_tx(CCLK,"AT+CCLK?\r\n",hdl_cclk); 
-//nb_cmd_tx(CEREG_REQ,"AT+CEREG?\r\n",hdl_cereg_req); 
-//nb_cmd_tx(CSCON_REQ,"AT+CSCON?\r\n",hdl_cscon_req); 
-//
-//
-//
-//nb_cmd_tx(NCONFIG_SET,"AT+NCONFIG=AUTOCONNECT,TRUE\r\n",hdl_cmd);
-//nb_cmd_tx(NCONFIG_SET,"AT+NCONFIG=AUTOCONNECT,FALSE\r\n",hdl_cmd);
-//nb_cmd_tx(NCONFIG_SET,"AT+NCONFIG=CR_0354_0338_SCRAMBLING,TRUE\r\n",hdl_cmd);
-//nb_cmd_tx(NCONFIG_SET,"AT+NCONFIG=CR_0354_0338_SCRAMBLING,FALSE\r\n",hdl_cmd);    
-//nb_cmd_tx(NCONFIG_SET,"AT+NCONFIG=CR_0859_SI_AVOID,TRUE\r\n",hdl_cmd);  
-//nb_cmd_tx(NCONFIG_SET,"AT+NCONFIG=CR_0354_0338_SCRAMBLING,FALSE\r\n",hdl_cmd);    
-//
-//nb_cmd_tx(CFUN_SET,"AT+CFUN=1\r\n",hdl_cmd); 
-//nb_cmd_tx(CFUN_CLR,"AT+CFUN=0\r\n",hdl_cmd); 
-//
-//nb_cmd_tx(CGATT_REQ,"AT+CGATT?\r\n",hdl_cmd); 
-//nb_cmd_tx(CGATT_SET,"AT+CGATT=1\r\n",hdl_cmd); 
-//
-//nb_cmd_tx(COPS,"AT+COPS=1,2,\"46011\"\r\n",hdl_cmd); 
-//nb_cmd_tx(CGDCONT,"AT+CGDCONT=1,\"IP\",\"ctnb\"\r\n",hdl_cmd); 
 
-//-----------------------------------//
-extern bc95_smsg bc95_s;
-extern bc95_info bc95_i;
-u8 hdl_cmd(void);
-u8 nb_cmd_tx(u8 cmd,u8* str_at, u8 (*callback)());
 #endif

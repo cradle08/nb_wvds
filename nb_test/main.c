@@ -49,6 +49,10 @@ void main()
 {
  // sampleT = 1120;
   msp430_cpu_init();
+  int8_t aaa = 23;
+  int8_t ttt = -23;
+  int8_t aa = 0xAA;
+  int8_t tt = 0x33;
   TA0_init();
 
   uart1_init(9600);

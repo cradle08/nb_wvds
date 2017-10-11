@@ -4,7 +4,7 @@
 
 
 
-// msg cmd 
+/* msg cmd  */
 enum {
   CMD_APP = 0xF1,         // updata app(ser 2 device)
   CMD_APP_ACK = 0xF2,     // updata ack(device 2 ser)
@@ -29,36 +29,37 @@ enum {
 };
   
 
-// msg header struct
-struct Msg_Head{
+/* msg header struct */
+struct Msg_Head {
   int8_t startflag; // AA
   uint8_t msglen;   // messge len
   uint8_t devno[6];     // device number
   uint8_t cmd;       // command id   
 };
 
-// msg tail
-struct Msg_Tail{
+/* msg tail */
+struct Msg_Tail {
   uint8_t crc[2];    // crc of type to data
   int8_t  endflag;   //FF
 };
 
 
-// send msg 
-struct SEND_MSG{
-  struct SEND_MSG* next;
+/* recv msg*/
+struct RECV_MSG {
   struct Msg_Head msg_head;
-  int8_t playdata[SEND_PLAYDATA_LEN];
+  uint8_t playata[RECV_PLAYDATA_LEN];
   struct Msg_Tail msg_tail;
+  struct RECV_MSG* next;
 };
 
-// recv msg
-struct RECV_MSG{
-  struct RECV_MSG* next;
+/* send msg */
+struct SEND_MSG {
   struct Msg_Head msg_head;
-//  int8_t playata[RECV_PLAYDATA_LEN];
+  uint8_t playdata[SEND_PLAYDATA_LEN];
   struct Msg_Tail msg_tail;
+  struct SEND_MSG* next;
 };
+
 
 MEMB(recv_msg_mem, struct RECV_MSG, RECV_MSGMEM_NUM); // 3
 LIST(recv_msg_list);
@@ -66,13 +67,13 @@ MEMB(send_msg_mem, struct SEND_MSG, SEND_MSGMEM_NUM); // 5
 LIST(send_msg_list);
 
 
-// most msg ack form
-struct msg_ack{
+/* most msg ack form */
+struct msg_ack {
   uint8_t tstamp[TSTAMP_LEN];
 };
 
 
-// update  msg form(s2d)
+/* update  msg form(s2d) */
 struct msg_data_app {
   uint8_t sfver; // soft version
   uint8_t hdver; // hard version
@@ -81,26 +82,26 @@ struct msg_data_app {
   uint8_t crc;   // crc
 };
 
-// update packet data msg form(s2d)
+/* update packet data msg form(s2d) */
 struct msg_update {
   uint8_t size;  // the packet size
   uint8_t no;    // the number of packet which is download
   int8_t*  data; // the packet data 
 };
 
-// updata packet data msg form ack(d2s)
+/* updata packet data msg form ack(d2s) */
 struct msg_updata_ack {
   uint8_t tstamp[TSTAMP_LEN];  // time stamp
   uint8_t no;                  // 
   uint8_t nb_signal;           // nb module signal strength
 };
 
-// query which segment device runing 
+/* query which segment device runing  */
 struct msg_segment {
-  int8_t data[2]; //???
+  int8_t data[2]; //
 };
 
-//
+/* msg run segment */
 struct msg_segment_ack {
   uint8_t tstamp[TSTAMP_LEN];
   uint8_t sfver;
@@ -108,7 +109,7 @@ struct msg_segment_ack {
   uint8_t nb_signal;
 };
 
-//  device check msg(d2s)
+/*  device check msg(d2s) */
 struct msg_check {
   uint8_t tstamp[TSTAMP_LEN];
   uint8_t status;      // device checking status: 0-leaving,1-parking, 2-strong mag, 3-init
@@ -119,7 +120,7 @@ struct msg_check {
   uint8_t bat_quantity; // bat quantity
 };
    
-//  heart beat msg(d2s)
+/*  heart beat msg(d2s) */
 struct msg_hb {
   uint8_t tstamp[TSTAMP_LEN];
   uint8_t status;
@@ -130,7 +131,7 @@ struct msg_hb {
   uint8_t bat_quantity;
 };
 
-//  alarm msg(d2s)
+/*  alarm msg(d2s) */
 struct msg_alarm {
   uint8_t nb_signal;
   uint8_t mag_sersor;   //qmc5883 status: 00-normal,01-can't sample, 02- value more than int16_t
@@ -139,7 +140,7 @@ struct msg_alarm {
   uint8_t battery;  // battery status: 00-normal, 01-low voltage
 };
 
-//  device base param set(s2d)
+/*  device base param set(s2d) */
 struct msg_base_param {
   uint8_t operation;  // 01-query, 02-set
   uint16_t hb_period;  // heart beat period
@@ -148,7 +149,7 @@ struct msg_base_param {
   uint8_t  batquantity_thresh; // battery quantity threshold
 };
 
-// device base param set ack(d2s)
+/* device base param set ack(d2s) */
 struct msg_base_param_ack {
   uint8_t operation;  // 01-query, 02-set
   uint16_t hb_period;  // heart beat period
@@ -157,7 +158,7 @@ struct msg_base_param_ack {
   uint8_t  batquantity_thresh; // battery quantity threshold
 };
 
-// algorithm param set(s2d)
+/* algorithm param set(s2d) */
 struct msg_algo_param {
     uint8_t operation;  // 01-query, 02-set
     uint16_t normal_period;  // normal sample period
@@ -169,7 +170,7 @@ struct msg_algo_param {
     uint8_t  sensor_gain;    // magnetic sensor gain
 };
 
-// algorithm param set ack(d2s)
+/* algorithm param set ack(d2s) */
 struct msg_algo_param_ack {
     uint8_t operation;  // 01-query, 02-set
     uint16_t normal_period;  // normal sample period
@@ -181,7 +182,7 @@ struct msg_algo_param_ack {
     uint8_t  sensor_gain;    // magnetic sensor gain
 };
    
-// magnetic change msg(d2s)
+/*  magnetic change msg(d2s) */
 struct msg_mag_change {
     uint8_t tstamp[TSTAMP_LEN];
     int16_t hillvalleys[UPLOAD_MAGDATA_NUM][3];  // magnetic hill and valley value 
@@ -191,19 +192,19 @@ struct msg_mag_change {
     uint8_t  status;
 };
 
-// magnetic change msg ack(d2s)
-struct msg_mag_change_ack{
+/* magnetic change msg ack(d2s) */
+struct msg_mag_change_ack {
     uint8_t tstamp[TSTAMP_LEN];
     uint8_t status; // 01-sucess, 00-fail //?????
 };
 
-// device reboot msg
-struct msg_reboot{
+/* device reboot msg */
+struct msg_reboot {
     uint8_t tstamp[TSTAMP_LEN];
 };
 
-// devicce reboot msg ack
-struct msg_reboot_ack{
+/* devicce reboot msg ack */
+struct msg_reboot_ack {
   uint8_t tstamp[TSTAMP_LEN];
   uint8_t result;  // 0-reboot success, 1-reboot fail
 };
@@ -212,32 +213,35 @@ struct msg_reboot_ack{
 
 
 
-struct RECV_MSG* get_available_recv_memb();
-struct SNED_MSG* get_available_send_memb();
-void handle_recv_msg(struct RECV_MSG* p);
-void handle_send_msg(struct SEND_MSG* p);
 
-// handle each msg func
-void msg_app(struct RECV_MSG* pr);
-void msg_app_ack(struct SEND_MSG* ps);
-void msg_updata(struct RECV_MSG* pr);
-void msg_updata_ack(struct SEND_MSG* ps);
-void msg_reboot(struct RECV_MSG* pr);
-void msg_reboot_ack(struct SEND_MSG* ps);
-void msg_run_line(struct RECV_MSG* pr);
-void msg_run_line_ack(struct SEND_MSG* ps);
-void msg_basic_param(struct RECV_MSG* pr);
-void msg_basic_param_ack(struct SEND_MSG* ps);
-void msg_algo_param(struct RECV_MSG* pr);
-void msg_algo_param_ack(struct SEND_MSG* ps);
-void msg_hb(struct SEND_MSG* ps);
-void msg_hb_ack(struct RECV_MSG* pr);
-void msg_alarm(struct SEND_MSG* ps);
-void msg_alarm_ack(struct RECV_MSG* pr);
-void msg_check(struct SEND_MSG* ps);
-void msg_check_ack(struct RECV_MSG* pr);
-void msg_mag_change(struct SEND_MSG* ps);
-void msg_mag_change_ack(struct RECV_MSG* pr);
 
-PROCESS_NAME(SendMSG_Process);
-#endif // __NB_CODE__
+void handle_recv_msg(struct RECV_MSG* p); //
+void handle_send_msg(struct SEND_MSG* p); //
+
+
+void handle_app(struct RECV_MSG* pr);
+void handle_updata(struct RECV_MSG* pr);
+void handle_reboot(struct RECV_MSG* pr);
+void handle_run_line(struct RECV_MSG* pr);
+void handle_base_param(struct RECV_MSG* pr);
+void handle_algo_param(struct RECV_MSG* pr);
+void handle_hb_ack(struct RECV_MSG* pr);
+void handle_alarm_ack(struct RECV_MSG* pr);
+void handle_check_ack(struct RECV_MSG* pr);
+void handle_mag_change_ack(struct RECV_MSG* pr);
+
+//void handle_app_ack(struct SEND_MSG* ps);
+//void handle_updata_ack(struct SEND_MSG* ps);
+//void handle_reboot_ack(struct SEND_MSG* ps);
+//void handle_run_line_ack(struct SEND_MSG* ps);
+//void handle_basic_param_ack(struct SEND_MSG* ps);
+//void handle_algo_param_ack(struct SEND_MSG* ps);
+//void handle_hb(struct SEND_MSG* ps);
+//void handle_alarm(struct SEND_MSG* ps);
+//void handle_check(struct SEND_MSG* ps);
+//void handle_mag_change(struct SEND_MSG* ps);
+
+
+PROCESS_NAME(sendmsg_process);
+
+#endif /*__NB_CODE__*/

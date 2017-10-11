@@ -49,6 +49,7 @@
 //#include "sys/rtimer.h"
 
 #include "sys/process.h"
+#include "sys/procinit.h"
 #include "sys/pt.h"
 
 #include "lib/ringbuf.h"

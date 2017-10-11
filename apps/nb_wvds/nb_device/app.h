@@ -1,5 +1,5 @@
-#ifndef _APP_H
-#define _APP_H
+#ifndef __APP_H__
+#define __APP_H__
 
 #include "platform-conf.h"
 #include "contiki.h"
@@ -34,7 +34,6 @@ struct ALGO {
 
 // device base param
 struct BASE_ARG{
-
   uint16_t hb_period;  // heart beat period
   uint16_t health_period; // device self check period
   uint16_t batvoltage_thresh; // battery voltage threshold
@@ -81,30 +80,28 @@ enum{
 };
 
 
-
+void recv_var_init(); // recv var init
+void send_var_init(); // send var inti
+int8_t add2recvbuf(); // add byte to recv msg  buffer
+//int8_t add2sendbuf(); // add byte to send msg buffer
 void base_arg_init(); // other var init
 void app_init(); // app init func
 void app_get_magdata(unsigned char *data, unsigned char *temp); // get xyz mag data callback func
-int uart1_recv_callback(int8_t c); // uart1 rxd interrupt handle callback function
-int8_t add2recvbuf(); // add byte to recv msg  buffer
+uint16_t  uart1_recv_callback(uint8_t c); // uart1 rxd interrupt handle callback function
 
 void create_check_msg(uint8_t status); // create check msg(0:leaving,1:parking, 2:strong magnetic,3:init)
 void create_mag_change_msg(); // create mag change msg
 void create_hb_msg(); // create heart beat  msg
 void create_alarm_msg(); // create alarm(device self check) msg
+void app_send_msg(struct SEND_MSG* p); // 
 
 
-void recv_var_init(); // recv var init
-void send_var_init(); // send var inti
-void parse_recv_msg(); // parse recv msg
 //void handle_recv_msg(); // after parse recv msg , we need to handle it
 void into_recv_msglist(); // send recv msg into recv list,and handle it later
-
+int8_t parse_recv_msg(); // parse recv msg, 0:parse a msg success, 1:parsing, 2:parse fail
 
 
     
 
-PROCESS_NAME(NB_Device);
-#endif /* _APP_H */
-
-
+PROCESS_NAME(nb_device);
+#endif /* __APP_H__ */

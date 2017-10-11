@@ -2453,6 +2453,12 @@
                     <name>$PROJ_DIR$\..\..\contiki\core\sys\process.h</name>
                 </file>
                 <file>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\procinit.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\..\contiki\core\sys\procinit.h</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\..\contiki\core\sys\stimer.c</name>
                 </file>
                 <file>
@@ -2480,6 +2486,12 @@
         <name>dev</name>
         <group>
             <name>bc95</name>
+            <file>
+                <name>$PROJ_DIR$\..\..\dev\bc95\bc95.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\dev\bc95\bc95.h</name>
+            </file>
         </group>
         <group>
             <name>m25pe</name>
@@ -2518,6 +2530,12 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\platform\f5310\platform-conf.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\rtc.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\platform\f5310\rtc.h</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\platform\f5310\uart1.c</name>

@@ -227,7 +227,7 @@
                 <option>
                     <name>FetConnection</name>
                     <version>5</version>
-                    <state>8</state>
+                    <state>0</state>
                 </option>
                 <option>
                     <name>SoftwareBreakpointEnable</name>

@@ -58,7 +58,10 @@
 #include "uart1.h"
 #include "qmc5883.h"
 #include "watchdog.h"
-
+#include "rtc.h"
+#include "bc95.h"
+   
+   
 /*----------------------------------------------------------------------------*/
 #define DEBUG 0
 #if DEBUG
@@ -74,7 +77,7 @@ extern uint8_t park_s;
 static uint16_t seq = 0;
 static uint8_t  parking_s = 3;
 static struct ctimer mytime;
-//extern volatile clock_time_t jiffies;
+static uint8_t unix_init_tstamp[6] = {16, 01, 01, 00, 00, 00}; // 160101 00:00:00
 
 //** app init function
 //void app_get_xyz(unsigned char *data, unsigned char *temp)
@@ -87,33 +90,37 @@ static struct ctimer mytime;
 int
 main(int argc, char **argv)
 {
-  
   //Initalize hardware.
   msp430_cpu_init(F_CPU);
   clock_init();
-  uart1_init(BAUD2UBR(9600));
-  qmc5883_init();
-  
-  
-  
-  
-  app_init(); // app data init
-  process_init();
-  process_start(&etimer_process, NULL);
-  ctimer_init();
-  process_start(&NB_Device, NULL);
- // process_start(&sensors_process, NULL);
-//  process_start(&unixtime_process, NULL);
-
-  //ctimer_set(&mytime, 200, app_test_send_msg, NULL);
-
-  while(1) {
-    uint8_t r;
-    do {
- //     watchdog_periodic();
-      r = process_run();
-    } while(r > 0);
+  unixtime_init(unix_init_tstamp);
+//  uart1_init(BAUD2UBR(9600));
+  nb_module_init();
+//  qmc5883_init();
+    
+  while(1)
+  {
+    //LMP4_EXIT;
   }
+  
+//  app_init(); // app data init
+//  process_init();
+//  process_start(&etimer_process, NULL);
+//  ctimer_init();
+//  process_start(&nb_device, NULL);
+//  process_start(&sendmsg_process, NULL);
+//  
+//
+//
+//
+//  while(1) {
+//    uint8_t r;
+//    do {
+// //     watchdog_periodic();
+//      r = process_run();
+//    } while(r > 0);
+//  }
+//  LPM3;
   
   
 //     P1DIR |= BIT2;  

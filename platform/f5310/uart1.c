@@ -1,5 +1,5 @@
 #include "contiki.h"
-#include "sys/ctimer.h"
+#include "app.h"
 #include "uart1.h"
 ///#include "dev/uart3.h"
 #include <string.h>
@@ -9,7 +9,7 @@ static uint16_t uart_rxidx = 0;
 static volatile uint8_t transmitting;
 
 //static int (*uart1_input_handler)(uint8_t *data, uint16_t len);
-static int (*uart1_input_handler)(int8_t c);
+static uint16_t (*uart1_input_handler)(uint8_t c);
 static void (*uart1_sent_callback)(void);
 
 static struct ctimer uart_ct;
@@ -74,7 +74,7 @@ uart1_active(void)
 
 //***
 void
-uart1_set_input(int (*input)(int8_t c))
+uart1_set_input(uint16_t (*input)(uint8_t c))
 {
   uart1_input_handler = input;
 }
@@ -163,12 +163,11 @@ uart1_byte_rcvd(uint8_t c)
   return 1;
 }
 
-/*
-//***
+
+/* uart1 interrupt func  */
 ISR(USCI_A1, uart1_rx_interrupt)
 {
   uint8_t c;
-  //leds_toggle(LEDS_ALL);
   if(UCA1IV == 2) {
     if(UCA1STAT & UCRXERR) {
       c = UCA1RXBUF;   // Clear error flags by forcing a dummy read
@@ -176,14 +175,15 @@ ISR(USCI_A1, uart1_rx_interrupt)
       c = UCA1RXBUF;
       if(uart1_input_handler != NULL) {
         if(uart1_input_handler(c)) {
+          if(P4IN & BIT7) { // had recv a msg
+            process_poll(&nb_device);
+          }
           LPM4_EXIT;
         }
       }
     }
   }
 }
-
-*/
 
 
 //#pragma vector=USCI_A1_VECTOR
